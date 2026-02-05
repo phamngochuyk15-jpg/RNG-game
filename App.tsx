@@ -40,11 +40,12 @@ const translations = {
     close: 'Đóng Lại',
     empty: 'Chỗ Trống',
     restockIn: 'Nhập hàng sau:',
-    rebirthBenefits: 'Quyền Lợi Vĩnh Viễn Khi Thăng Hoa:',
-    benefitSlot: '+1 Slot Tế Đàn vĩnh viễn',
-    benefitLuck: '+10% May mắn vĩnh viễn',
-    benefitIncome: '+25% Mana nhận được',
-    rebirthWarn: 'Mọi Mana, vật phẩm và nâng cấp sẽ bị reset (trừ Linh Thú).'
+    rebirthBenefits: 'Quyền Lợi Vĩnh Viễn',
+    benefitSlot: 'Slot Tế Đàn',
+    benefitLuck: 'May Mắn',
+    benefitIncome: 'Mana Thu Hoạch',
+    rebirthWarn: 'Dữ liệu vật phẩm & nâng cấp sẽ được làm mới.',
+    rebirthTitle: 'Vượt Qua Luân Hồi'
   },
   en: {
     manifest: 'Manifest',
@@ -81,11 +82,12 @@ const translations = {
     close: 'Close',
     empty: 'Vacant',
     restockIn: 'Restock in:',
-    rebirthBenefits: 'Permanent Ascension Benefits:',
-    benefitSlot: '+1 Permanent Altar Slot',
-    benefitLuck: '+10% Permanent Luck',
-    benefitIncome: '+25% Mana Multiplier',
-    rebirthWarn: 'All Mana, Items, and Upgrades will reset (except Familiars).'
+    rebirthBenefits: 'Permanent Benefits',
+    benefitSlot: 'Altar Slot',
+    benefitLuck: 'Luck Boost',
+    benefitIncome: 'Mana Multiplier',
+    rebirthWarn: 'Items and Upgrades will be reset for a new beginning.',
+    rebirthTitle: 'Ascend Beyond'
   }
 };
 
@@ -119,7 +121,7 @@ export default function App() {
   const t = translations[lang];
 
   const [stats, setStats] = useState<UserStats>(() => {
-    const saved = localStorage.getItem('rng_ethereal_v9_stats');
+    const saved = localStorage.getItem('rng_ethereal_v10_stats');
     if (saved) return JSON.parse(saved);
     return {
       money: 1000,
@@ -136,7 +138,7 @@ export default function App() {
   });
 
   const [inventory, setInventory] = useState<InventoryArtifact[]>(() => {
-    const saved = localStorage.getItem('rng_ethereal_v9_inv');
+    const saved = localStorage.getItem('rng_ethereal_v10_inv');
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -184,12 +186,12 @@ export default function App() {
   const [currentLore, setCurrentLore] = useState<string | null>(null);
 
   useEffect(() => {
-    localStorage.setItem('rng_ethereal_v9_stats', JSON.stringify(stats));
-    localStorage.setItem('rng_ethereal_v9_inv', JSON.stringify(inventory));
+    localStorage.setItem('rng_ethereal_v10_stats', JSON.stringify(stats));
+    localStorage.setItem('rng_ethereal_v10_inv', JSON.stringify(inventory));
   }, [stats, inventory]);
 
   const getLuckMultiplier = useCallback(() => 1 + (stats.upgrades.luckLevel * 0.15), [stats.upgrades.luckLevel]);
-  const getRollCooldown = useCallback(() => Math.max(100, 1100 - (stats.upgrades.speedLevel * 100)), [stats.upgrades.speedLevel]);
+  const getRollCooldown = useCallback(() => Math.max(80, 1100 - (stats.upgrades.speedLevel * 100)), [stats.upgrades.speedLevel]);
   const getIncomeMultiplier = useCallback(() => (1 + stats.rebirths * 0.25) * (1 + stats.upgrades.moneyLevel * 0.2), [stats.rebirths, stats.upgrades.moneyLevel]);
 
   const getIncomePerSec = useCallback(() => {
@@ -288,7 +290,7 @@ export default function App() {
     setTimeout(() => {
         setIsRolling(false);
         if (!isAuto && selected.chance >= 1000) setShowCutscene(true);
-    }, isAuto ? 80 : 800);
+    }, isAuto ? 70 : 800);
   };
 
   useEffect(() => {
@@ -447,8 +449,8 @@ export default function App() {
                           <i className={`fas ${getArtifactIcon(art.tier)} text-8xl mb-10`} style={{ color: art.color }}></i>
                           <h3 className="heading-font text-5xl font-bold tracking-tight text-white uppercase">{rolledItem.mutationName && <span className="text-xl block mb-2 opacity-60 italic">{rolledItem.mutationName}</span>}{art.name}</h3>
                           <div className="flex gap-4 w-full justify-center mt-12">
-                            <button onClick={() => setRolledItem(null)} className="flex-1 px-8 py-5 border border-[#d4af37] text-[#d4af37] heading-font text-[10px] uppercase tracking-widest">{t.repeat}</button>
-                            <button onClick={() => { equipOrUnequip(rolledItem.instanceId); setRolledItem(null); }} className="flex-1 px-8 py-5 bg-[#d4af37] text-black heading-font text-[10px] uppercase tracking-widest">{t.sacrifice}</button>
+                            <button onClick={() => setRolledItem(null)} className="flex-1 px-8 py-5 border border-[#d4af37] text-[#d4af37] heading-font text-[10px] uppercase tracking-widest hover:bg-[#d4af37]/10 transition-all">{t.repeat}</button>
+                            <button onClick={() => { equipOrUnequip(rolledItem.instanceId); setRolledItem(null); }} className="flex-1 px-8 py-5 bg-[#d4af37] text-black heading-font text-[10px] uppercase tracking-widest hover:brightness-110 transition-all">{t.sacrifice}</button>
                           </div>
                         </>
                       );
@@ -460,7 +462,7 @@ export default function App() {
                       const count = stats.ownedDice[dice.id] || 0;
                       if (count <= 0) return null;
                       return (
-                        <button key={dice.id} onClick={() => { handleRoll(dice.id); setStats(prev => ({ ...prev, settings: { ...prev.settings, selectedDiceId: dice.id } })) }} className={`group glass p-6 rounded-none border transition-all flex flex-col items-center gap-3 relative ${stats.settings.selectedDiceId === dice.id ? 'border-[#d4af37] bg-[#d4af37]/5' : 'border-[#d4af37]/10 hover:border-[#d4af37]/30'}`}>
+                        <button key={dice.id} onClick={() => { handleRoll(dice.id); setStats(prev => ({ ...prev, settings: { ...prev.settings, selectedDiceId: dice.id } })) }} className={`group glass p-6 rounded-none border transition-all flex flex-col items-center gap-3 relative ${stats.settings.selectedDiceId === dice.id ? 'border-[#d4af37] bg-[#d4af37]/5 shadow-[0_0_20px_rgba(212,175,55,0.1)]' : 'border-[#d4af37]/10 hover:border-[#d4af37]/30'}`}>
                           <div className="absolute top-2 right-2 heading-font text-[9px] text-[#d4af37]">x{count}</div>
                           <i className="fas fa-dice-d20 text-3xl" style={{ color: dice.color }}></i>
                           <div className="heading-font text-[9px] text-white uppercase truncate w-24">{dice.name}</div>
@@ -483,11 +485,11 @@ export default function App() {
                         const sorted = [...inventory].sort((a, b) => b.value - a.value);
                         const numSlots = stats.activeArtifactIds.length;
                         setStats(prev => ({ ...prev, activeArtifactIds: [...sorted.slice(0, numSlots).map(i => i.instanceId), ...Array(Math.max(0, numSlots - sorted.length)).fill(null)].slice(0, numSlots) }));
-                    }} className="px-8 py-4 border border-emerald-500/40 text-emerald-400 heading-font text-[10px] uppercase">{t.best}</button>
+                    }} className="px-8 py-4 border border-emerald-500/40 text-emerald-400 heading-font text-[10px] uppercase hover:bg-emerald-500/10 transition-all">{t.best}</button>
                     <button onClick={() => { if (confirm(t.burnCommons)) setInventory(prev => prev.filter(i => {
                         const art = ARTIFACTS.find(a => a.id === i.artifactId)!;
                         return art.tier !== RarityTier.COMMON || stats.activeArtifactIds.includes(i.instanceId);
-                    })); }} className="px-8 py-4 border border-[#d4af37]/30 text-[#d4af37]/60 heading-font text-[10px] uppercase">{t.burnCommons}</button>
+                    })); }} className="px-8 py-4 border border-[#d4af37]/30 text-[#d4af37]/60 heading-font text-[10px] uppercase hover:text-[#d4af37] transition-all">{t.burnCommons}</button>
                   </div>
                 </div>
                 <div className="flex items-center gap-6 glass p-2 w-fit border-[#d4af37]/20">
@@ -504,8 +506,8 @@ export default function App() {
                   const isDeleting = deletingId === item.instanceId;
                   return (
                     <div key={item.instanceId} className="relative group">
-                      <button onClick={() => equipOrUnequip(item.instanceId)} className={`w-full glass p-6 rounded-none border transition-all flex flex-col items-center text-center ${isActive ? 'border-[#d4af37] bg-[#d4af37]/10' : 'border-[#d4af37]/10 hover:border-[#d4af37]/60'}`}>
-                        <i className={`fas ${getArtifactIcon(art.tier)} text-3xl mb-4`} style={{ color: art.color }}></i>
+                      <button onClick={() => equipOrUnequip(item.instanceId)} className={`w-full glass p-6 rounded-none border transition-all flex flex-col items-center text-center ${isActive ? 'border-[#d4af37] bg-[#d4af37]/10' : 'border-[#d4af37]/10 hover:border-[#d4af37]/60'} ${art.chance >= 10000 ? 'rarity-glow' : ''}`}>
+                        <i className={`fas ${getArtifactIcon(art.tier)} text-3xl mb-4 ${art.tier === RarityTier.SINGULARITY ? 'rainbow-glow' : ''}`} style={{ color: art.color }}></i>
                         <div className="heading-font text-[10px] text-white uppercase truncate w-full">{art.name}</div>
                         <div className="text-emerald-400/70 text-[8px] font-mono mt-2 italic">+{item.value.toLocaleString()} /s</div>
                         {isActive && <div className="mt-3 heading-font text-[6px] text-[#d4af37] uppercase tracking-[0.2em] animate-pulse">{t.enrolled}</div>}
@@ -522,6 +524,79 @@ export default function App() {
             </div>
           )}
 
+          {activeTab === 'rebirth' && (
+            <div className="max-w-4xl mx-auto flex flex-col items-center min-h-full justify-center pb-24 pt-10">
+                 <i className="fas fa-infinity text-[6rem] md:text-[8rem] text-[#d4af37] mb-8 animate-aura-float glow-text"></i>
+                 <h2 className="heading-font text-5xl md:text-6xl text-white uppercase italic mb-8 text-center">{t.rebirthTitle}</h2>
+                 
+                 <div className="glass p-8 md:p-12 border border-[#d4af37]/30 max-w-2xl w-full relative overflow-hidden mystic-border">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent"></div>
+                    
+                    <h3 className="heading-font text-[#d4af37] text-lg uppercase tracking-[0.3em] mb-10 text-center border-b border-[#d4af37]/10 pb-4">{t.rebirthBenefits}</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+                        <div className="flex flex-col items-center gap-4 text-center group">
+                            <div className="w-14 h-14 rounded-full border border-[#d4af37]/20 flex items-center justify-center bg-[#d4af37]/5 group-hover:bg-[#d4af37]/10 transition-all">
+                                <i className="fas fa-circle-plus text-[#d4af37] text-xl"></i>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] heading-font uppercase text-[#d4af37] mb-1">{t.benefitSlot}</span>
+                                <span className="text-white text-xs opacity-70">+1 Slot Vĩnh Viễn</span>
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-center gap-4 text-center group">
+                            <div className="w-14 h-14 rounded-full border border-[#d4af37]/20 flex items-center justify-center bg-[#d4af37]/5 group-hover:bg-[#d4af37]/10 transition-all">
+                                <i className="fas fa-wand-magic-sparkles text-[#d4af37] text-xl"></i>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] heading-font uppercase text-[#d4af37] mb-1">{t.benefitLuck}</span>
+                                <span className="text-white text-xs opacity-70">+10% May Mắn</span>
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-center gap-4 text-center group">
+                            <div className="w-14 h-14 rounded-full border border-[#d4af37]/20 flex items-center justify-center bg-[#d4af37]/5 group-hover:bg-[#d4af37]/10 transition-all">
+                                <i className="fas fa-coins text-[#d4af37] text-xl"></i>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] heading-font uppercase text-[#d4af37] mb-1">{t.benefitIncome}</span>
+                                <span className="text-white text-xs opacity-70">+25% Mana Thu Hoạch</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p className="text-red-400/60 text-[9px] md:text-[10px] uppercase tracking-[0.2em] font-black text-center pt-6 border-t border-white/5 italic">
+                        <i className="fas fa-triangle-exclamation mr-2"></i>{t.rebirthWarn}
+                    </p>
+                 </div>
+
+                 <div className="mt-12 flex flex-col items-center gap-4 w-full">
+                    <button 
+                      onClick={() => {
+                        const cost = 5000000 * Math.pow(10, stats.rebirths);
+                        if (stats.money >= cost) {
+                          if (confirm(t.transcend + "?")) {
+                            setStats(prev => ({
+                              ...prev,
+                              money: 1000,
+                              rebirths: prev.rebirths + 1,
+                              activeArtifactIds: [...prev.activeArtifactIds, null], 
+                              upgrades: { luckLevel: 0, speedLevel: 0, moneyLevel: 0 }
+                            }));
+                            setInventory([]);
+                            setActiveTab('roll');
+                          }
+                        }
+                      }} 
+                      className={`w-full max-w-md px-10 py-6 border-2 heading-font text-xl md:text-2xl uppercase transition-all flex flex-col items-center gap-1 ${stats.money >= 5000000 * Math.pow(10, stats.rebirths) ? 'border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37] hover:text-black shadow-[0_0_40px_rgba(212,175,55,0.2)]' : 'border-white/5 text-slate-800 cursor-not-allowed'}`}
+                    >
+                      <span>{t.transcend}</span>
+                      <span className="text-[10px] opacity-60">Cost: {(5000000 * Math.pow(10, stats.rebirths)).toLocaleString()} Mana</span>
+                    </button>
+                 </div>
+            </div>
+          )}
+
+          {/* Tab Lab, Forge, Pets, Index và các phần khác giữ nguyên logic */}
           {activeTab === 'shop' && (
              <div className="max-w-6xl mx-auto pb-24">
                 <div className="flex justify-between items-end mb-14">
@@ -547,43 +622,6 @@ export default function App() {
                     })}
                 </div>
              </div>
-          )}
-
-          {activeTab === 'rebirth' && (
-            <div className="max-w-4xl mx-auto flex flex-col items-center h-full justify-center pb-20">
-                 <i className="fas fa-infinity text-[8rem] text-[#d4af37] mb-10 animate-aura-float glow-text"></i>
-                 <h2 className="heading-font text-6xl text-white uppercase italic mb-8">{t.transcend}</h2>
-                 
-                 <div className="glass p-10 border border-[#d4af37]/30 max-w-xl w-full text-center space-y-6 mb-12 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent"></div>
-                    <h3 className="heading-font text-[#d4af37] text-lg uppercase tracking-widest">{t.rebirthBenefits}</h3>
-                    <ul className="text-slate-300 space-y-3 font-serif italic text-lg">
-                        <li className="flex items-center justify-center gap-3"><i className="fas fa-plus-circle text-[#d4af37] text-xs"></i> {t.benefitSlot}</li>
-                        <li className="flex items-center justify-center gap-3"><i className="fas fa-plus-circle text-[#d4af37] text-xs"></i> {t.benefitLuck}</li>
-                        <li className="flex items-center justify-center gap-3"><i className="fas fa-plus-circle text-[#d4af37] text-xs"></i> {t.benefitIncome}</li>
-                    </ul>
-                    <p className="text-red-400/60 text-[10px] uppercase tracking-widest font-black pt-4">{t.rebirthWarn}</p>
-                 </div>
-
-                 <button onClick={() => {
-                   const cost = 5000000 * Math.pow(10, stats.rebirths);
-                   if (stats.money >= cost) {
-                    if (confirm(t.transcend + "?")) {
-                      setStats(prev => ({
-                        ...prev,
-                        money: 1000,
-                        rebirths: prev.rebirths + 1,
-                        activeArtifactIds: [...prev.activeArtifactIds, null], // Tăng slot vĩnh viễn
-                        upgrades: { luckLevel: 0, speedLevel: 0, moneyLevel: 0 }
-                      }));
-                      setInventory([]);
-                      setActiveTab('roll');
-                    }
-                   }
-                 }} className={`px-16 py-8 border-2 heading-font text-2xl uppercase transition-all ${stats.money >= 5000000 * Math.pow(10, stats.rebirths) ? 'border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37] hover:text-black shadow-[0_0_30px_rgba(212,175,55,0.2)]' : 'border-white/5 text-slate-800 cursor-not-allowed'}`}>
-                   {t.transcend} ({(5000000 * Math.pow(10, stats.rebirths)).toLocaleString()} Mana)
-                 </button>
-            </div>
           )}
 
           {activeTab === 'lab' && (
