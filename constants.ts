@@ -13,62 +13,65 @@ export const MUTATIONS: Mutation[] = [
   { name: 'Transcendent', multiplier: 25, color: '#ff00ff' },
 ];
 
-export const ARTIFACTS: Artifact[] = [
-  // --- COMMON (1 in 2 to 10) ---
-  { id: 'a1', name: 'Worn Pebble', chance: 2, baseValue: 1, tier: RarityTier.COMMON, color: '#94a3b8' },
-  { id: 'a2', name: 'Elder Twig', chance: 2.5, baseValue: 2, tier: RarityTier.COMMON, color: '#78350f' },
-  { id: 'a3', name: 'Star Sand', chance: 3, baseValue: 2, tier: RarityTier.COMMON, color: '#fde047' },
-  { id: 'a4', name: 'Spirit Mote', chance: 3.5, baseValue: 3, tier: RarityTier.COMMON, color: '#cbd5e1' },
-  { id: 'a5', name: 'Autumn Leaf', chance: 4, baseValue: 4, tier: RarityTier.COMMON, color: '#a16207' },
-  { id: 'a6', name: 'River Stone', chance: 5, baseValue: 5, tier: RarityTier.COMMON, color: '#64748b' },
-  { id: 'a7', name: 'Broken Shell', chance: 7, baseValue: 6, tier: RarityTier.COMMON, color: '#fed7aa' },
-  { id: 'a8', name: 'Glass Shard', chance: 10, baseValue: 10, tier: RarityTier.COMMON, color: '#93c5fd' },
+const createArtifacts = (): Artifact[] => {
+  const list: Artifact[] = [];
+  
+  // COMMON (25 items)
+  const commonNames = ['Sỏi Mòn', 'Cành Khô', 'Cát Sao', 'Bụi Linh Hồn', 'Lá Thu', 'Đá Cuội', 'Vỏ Ốc Vỡ', 'Mảnh Thủy Tinh', 'Đinh Gỉ', 'Rêu Khô', 'Lông Vũ Cũ', 'Hơi Mây', 'Bùn Đất', 'Quả Thông', 'Tảo Biển', 'Hạt Cườm nứt', 'Tro Tàn', 'Giọt Sương', 'Rễ Cây Hóa Đá', 'Lông Thú Mềm', 'Phấn Xám', 'Kim Cong', 'Cỏ Nhọ Nồi', 'Mảnh Sương', 'Trang Sách Rách'];
+  commonNames.forEach((n, i) => list.push({ id: `c${i}`, name: n, chance: 2 + i * 0.5, baseValue: 1 + i, tier: RarityTier.COMMON, color: '#94a3b8' }));
 
-  // --- UNCOMMON (1 in 11 to 100) ---
-  { id: 'a12', name: 'Bronze Coin', chance: 15, baseValue: 20, tier: RarityTier.UNCOMMON, color: '#d97706' },
-  { id: 'a13', name: 'Iron Ring', chance: 25, baseValue: 35, tier: RarityTier.UNCOMMON, color: '#64748b' },
-  { id: 'a14', name: 'Copper Key', chance: 40, baseValue: 50, tier: RarityTier.UNCOMMON, color: '#b45309' },
-  { id: 'a15', name: 'Leather Pouch', chance: 60, baseValue: 80, tier: RarityTier.UNCOMMON, color: '#78350f' },
-  { id: 'a16', name: 'Jade Bead', chance: 80, baseValue: 110, tier: RarityTier.UNCOMMON, color: '#10b981' },
-  { id: 'a17', name: 'Obsidian Arrow', chance: 100, baseValue: 150, tier: RarityTier.UNCOMMON, color: '#1e293b' },
+  // UNCOMMON (35 items)
+  const uncommonNames = ['Tiền Đồng', 'Nhẫn Sắt', 'Chìa Khóa Đồng', 'Túi Da', 'Hạt Ngọc Bích', 'Mũi Tên Obsidian', 'Dải Lụa', 'Còi Thép', 'Xúc Xắc Xương', 'Nhựa Hổ Phách', 'Siro Phong', 'Sợi Chỉ Bạc', 'Răng Sói', 'Da Rắn', 'Móng Cú', 'Mảnh Thạch Anh', 'Đá Lửa', 'Bao Tải Cũ', 'Bào Tử Sắt', 'Quả Cân Chì', 'Chén Thiếc', 'Bó Len', 'Than Hồng', 'Đồng Hồ Cát', 'Dấu Sáp', 'Lọ Mực', 'Bút Lông', 'Chuông Đồng', 'Tượng Đất Sét', 'Thấu Kính Thủy Tinh', 'Mảnh Gương', 'Bu Lông Sắt', 'Tinh Thể Muối', 'Bụi Lưu Huỳnh', 'Lọ Thủy Ngân'];
+  uncommonNames.forEach((n, i) => list.push({ id: `u${i}`, name: n, chance: 20 + i * 5, baseValue: 20 + i * 10, tier: RarityTier.UNCOMMON, color: '#64748b' }));
 
-  // --- RARE (1 in 101 to 1,000) ---
-  { id: 'a26', name: 'Silver Compass', chance: 150, baseValue: 350, tier: RarityTier.RARE, color: '#e2e8f0' },
-  { id: 'a27', name: 'Glow Tulip', chance: 300, baseValue: 600, tier: RarityTier.RARE, color: '#4ade80' },
-  { id: 'a28', name: 'Amethyst Spike', chance: 500, baseValue: 1200, tier: RarityTier.RARE, color: '#a855f7' },
-  { id: 'a29', name: 'Ocean Pearl', chance: 750, baseValue: 2500, tier: RarityTier.RARE, color: '#60a5fa' },
-  { id: 'a30', name: 'Dragon Scale', chance: 1000, baseValue: 5000, tier: RarityTier.RARE, color: '#f97316' },
+  // RARE (40 items)
+  const rareNames = ['La Bàn Bạc', 'Uất Kim Hương Sáng', 'Gai Thạch Anh Tím', 'Ngọc Trai Biển', 'Vảy Rồng', 'Tro Phượng Hoàng', 'Màn Sương Trăng', 'Hồng Ngọc Sao', 'Lõi Đá Mặt Trời', 'Mắt Mithril', 'Mắt Gorgon', 'Mực Kraken', 'Lá Yggdrasil', 'Mảnh Khiên Aegis', 'Răng Nanh Basilisk', 'Sừng Chimera', 'Câu Đố Nhân Sư', 'Lông Vũ Pegasus', 'Tim Hydra', 'Rìu Minotaur', 'Cung Nhân Mã', 'Nhựa Cây Dryad', 'Nước Mắt Undine', 'Dầu Salamander', 'Hơi Thở Sylph', 'Răng Ma Cà Rồng', 'Móng Vuốt Người Sói', 'Xích Ma Quái', 'Biểu Tượng Cung Hoàng Đạo', 'Bảng Đá Cổ Ngữ', 'Con Mắt Huyền Bí', 'Viên Ngọc Tiên Tri', 'Quả Cầu Pha Lê', 'Hoa Hồng Phù Phép', 'Đèn Thần', 'Lọ Điều Ước', 'Chổi Phù Thủy', 'Mảnh Vạc Cũ', 'Mũ Pháp Sư', 'Trang Sách Phép'];
+  rareNames.forEach((n, i) => list.push({ id: `r${i}`, name: n, chance: 200 + i * 50, baseValue: 300 + i * 100, tier: RarityTier.RARE, color: '#a855f7' }));
 
-  // --- EPIC (1 in 1,001 to 10,000) ---
-  { id: 'a40', name: 'Templar Crest', chance: 2500, baseValue: 15000, tier: RarityTier.EPIC, color: '#ef4444' },
-  { id: 'a41', name: 'Astral Grimoire', chance: 5000, baseValue: 35000, tier: RarityTier.EPIC, color: '#6366f1' },
-  { id: 'a42', name: 'Valkyrie Feather', chance: 7500, baseValue: 70000, tier: RarityTier.EPIC, color: '#fef3c7' },
-  { id: 'a43', name: 'Mana Well', chance: 10000, baseValue: 120000, tier: RarityTier.EPIC, color: '#3b82f6' },
+  // EPIC (35 items)
+  const epicNames = ['Huy Hiệu Hiệp Sĩ', 'Grimoire Tinh Tú', 'Lông Vũ Valkyrie', 'Giếng Mana', 'Thánh Kiếm Ánh Sáng', 'Khiên Danh Độ', 'Mũ Giáp Quyền Năng', 'Ủng Tốc Độ', 'Găng Tay Sức Mạnh', 'Nhẫn Trí Tuệ', 'Bùa Hộ Mệnh Sự Sống', 'Áo Choàng Bóng Đêm', 'Thắt Lưng Khổng Lồ', 'Vòng Tay Phòng Thủ', 'Quyền Trượng Nhà Vua', 'Vương Miện Gai', 'Gậy Nguyên Tố', 'Búa Công Lý', 'Cung Sao', 'Dao Độc', 'Thương Thiên Đường', 'Đinh Ba Thủy Triều', 'Đàn Lyre Orpheus', 'Lông Cừu Vàng', 'Hộp Pandora', 'Đôi Cánh Icarus', 'Gậy Caduceus', 'Mảnh Mjolnir', 'Mũi Gungnir', 'Chuôi Excalibur', 'Ấn Ký Cổ Đại', 'Lửa Vĩnh Hằng', 'Băng Thanh Khiết', 'Hơi Thở Rồng', 'Máu Titan'];
+  epicNames.forEach((n, i) => list.push({ id: `e${i}`, name: n, chance: 2500 + i * 500, baseValue: 10000 + i * 5000, tier: RarityTier.EPIC, color: '#3b82f6' }));
 
-  // --- LEGENDARY (1 in 10,001 to 100,000) ---
-  { id: 'a50', name: 'Shard of Excalibur', chance: 25000, baseValue: 500000, tier: RarityTier.LEGENDARY, color: '#fbbf24' },
-  { id: 'a51', name: 'Essence of Sun', chance: 50000, baseValue: 1200000, tier: RarityTier.LEGENDARY, color: '#f59e0b' },
-  { id: 'a52', name: 'Moonstone Eye', chance: 75000, baseValue: 2500000, tier: RarityTier.LEGENDARY, color: '#e2e8f0' },
-  { id: 'a53', name: 'Fallen Galaxy', chance: 100000, baseValue: 5000000, tier: RarityTier.LEGENDARY, color: '#ffffff' },
+  // LEGENDARY (30 items)
+  const legNames = ['Mảnh Kiếm Excalibur', 'Tinh Hoa Mặt Trời', 'Mắt Đá Mặt Trăng', 'Thiên Hà Sụp Đổ', 'Tim Thần Rồng', 'Cành Cây Thế Giới', 'Đá Triết Gia', 'Chén Thánh', 'Rương Thánh Tích', 'Ngọn Thương Định Mệnh', 'Mắt Thần Horus', 'Ankh Vĩnh Cửu', 'Tia Sét Của Zeus', 'Mũ Tàng Hình Hades', 'Đinh Ba Poseidon', 'Búa Hephaestus', 'Cung Artemis', 'Gương Aphrodite', 'Khiên Athena', 'Huy Hiệu Ares', 'Gậy Hermes', 'Sừng Sung Túc', 'Táo Vàng', 'Lọ Ambrosia', 'Nectar Thần Thánh', 'Bản Vẽ Vạn Vật', 'Lời Thề Kim Cương', 'Máu Của Chaos', 'Sợi Chỉ Định Mệnh', 'Hơi Thở Gaia'];
+  legNames.forEach((n, i) => list.push({ id: `l${i}`, name: n, chance: 25000 + i * 5000, baseValue: 100000 + i * 50000, tier: RarityTier.LEGENDARY, color: '#fbbf24' }));
 
-  // --- MYTHICAL (1 in 100,001 to 1M) ---
-  { id: 'a60', name: 'Void Lantern', chance: 250000, baseValue: 15000000, tier: RarityTier.MYTHICAL, color: '#4c1d95' },
-  { id: 'a61', name: 'Nebula Core', chance: 500000, baseValue: 40000000, tier: RarityTier.MYTHICAL, color: '#c084fc' },
-  { id: 'a62', name: 'Omega Sigil', chance: 1000000, baseValue: 100000000, tier: RarityTier.MYTHICAL, color: '#ef4444' },
+  // MYTHICAL (20 items)
+  const mythNames = ['Đèn Lồng Hư Không', 'Lõi Tinh Vân', 'Ấn Ký Omega', 'Tia Sáng Alpha', 'Hạt Giống Lỗ Đen', 'Vang Vọng Siêu Tân Tinh', 'Bụi Vũ Trụ', 'Tia Quasar', 'Nhịp Đập Pulsar', 'Cổng Lỗ Sâu', 'Chân Trời Sự Kiện', 'Vật Chất Tối', 'Cầu Phản Vật Chất', 'Bóng Ma Lượng Tử', 'Lý Thuyết Dây', 'Chìa Khóa Đa Vũ Trụ', 'Nghịch Lý Thời Gian', 'Bẻ Cong Thực Tại', 'Mảnh Tồn Tại', 'Sự Hư Vô Tuyệt Đối'];
+  mythNames.forEach((n, i) => list.push({ id: `m${i}`, name: n, chance: 200000 + i * 100000, baseValue: 2000000 + i * 1000000, tier: RarityTier.MYTHICAL, color: '#c084fc' }));
 
-  // --- CELESTIAL & DIVINE (1 in 1M+) ---
-  { id: 'a70', name: 'Aetheria Crown', chance: 5000000, baseValue: 500000000, tier: RarityTier.CELESTIAL, color: '#60a5fa' },
-  { id: 'a80', name: 'Divine Mandate', chance: 10000000, baseValue: 2000000000, tier: RarityTier.DIVINE, color: '#ffffff' },
-  { id: 'a90', name: 'Origin Spark', chance: 50000000, baseValue: 10000000000, tier: RarityTier.BEYOND, color: '#f43f5e' },
-  { id: 'a91', name: 'Zenith Gate', chance: 100000000, baseValue: 50000000000, tier: RarityTier.ZENITH, color: '#fbbf24' },
-  { id: 'a92', name: 'Ultimate Singularity', chance: 500000000, baseValue: 1000000000000, tier: RarityTier.SINGULARITY, color: '#ff00ff' },
-];
+  // CELESTIAL & DIVINE (30 items - TĂNG THÊM 15)
+  const celDivineNames = [
+    'Vương Miện Aetheria', 'Chỉ Dụ Thần Thánh', 'Tia Sáng Khởi Nguyên', 'Cổng Thiên Đỉnh', 'Ngai Vàng Ê-te', 'Hơi Thở Thần Linh', 'Kẻ Dệt Vận Mệnh', 'Lò Rèn Linh Hồn', 'Ánh Sáng Sáng Thế', 'Bóng Tối Kết Thúc', 'Cân Bằng Vĩnh Cửu', 'Sự Im Lặng Vô Tận', 'Tiếng Thét Nguyên Thủy', 'Lời Thì Thầm Cổ Đại', 'Quy Luật Tự Nhiên',
+    'Tinh Hoa Tinh Tú', 'Màn Sương Nebula', 'Hợp Âm Vũ Trụ', 'Mắt Thần Odin', 'Lời Nguyền Titan', 'Phước Lành Olympus', 'Trái Tim Gaia', 'Hơi Thở Rồng Thiêng', 'Suối Nguồn Mana', 'Vảy Rồng Thần', 'Lông Vũ Phượng Hoàng Trắng', 'Giọt Lệ Nữ Thần', 'Ấn Ký Sáng Thế', 'Vòng Xoáy Thiên Hà', 'Tâm Điểm Vạn Vật'
+  ];
+  celDivineNames.forEach((n, i) => {
+    const tier = i < 15 ? RarityTier.CELESTIAL : RarityTier.DIVINE;
+    list.push({ id: `cd${i}`, name: n, chance: 1500000 + i * 3000000, baseValue: 20000000 + i * 15000000, tier, color: tier === RarityTier.CELESTIAL ? '#60a5fa' : '#ffffff' });
+  });
+
+  // BEYOND, ZENITH, SINGULARITY (25 items - TĂNG THÊM 10)
+  const finalNames = [
+    'Độ Không Tuyệt Đối', 'Vô Hạn Tối Đa', 'Hư Không Thực Sự', 'Điểm Kết Thời Gian', 'Điểm Đầu Vạn Vật', 'Bản Ngã Duy Nhất', 'Điểm Kỳ Dị', 'Vượt Xa Hoàn Hảo', 'Đỉnh Cao Thiên Đỉnh', 'Thực Tại Cuối Cùng', 'Entropy Toàn Phần', 'Hòa Âm Hoàn Mỹ', 'Mã Nguồn Vũ Trụ', 'Bản Thiết Kế Kiến Trúc Sư', 'Lời Nguyện Cuối Cùng',
+    'Nhịp Đập Đa Vũ Trụ', 'Ký Ức Thời Không', 'Sợi Chỉ Thực Tại', 'Vùng Đất Không Tên', 'Sự Tồn Tại Tối Thượng', 'Ý Chí Đấng Tạo Hóa', 'Hơi Thở Hư Vô', 'Sự Sụp Đổ Của Logic', 'Vòng Lặp Vĩnh Cửu', 'Cái Kết Tuyệt Đối'
+  ];
+  finalNames.forEach((n, i) => {
+    let tier = RarityTier.BEYOND;
+    if (i >= 8) tier = RarityTier.ZENITH;
+    if (i >= 16) tier = RarityTier.SINGULARITY;
+    list.push({ id: `f${i}`, name: n, chance: 60000000 + i * 80000000, baseValue: 800000000 + i * 700000000, tier, color: tier === RarityTier.SINGULARITY ? '#ff00ff' : (tier === RarityTier.ZENITH ? '#fbbf24' : '#f43f5e') });
+  });
+
+  return list;
+};
+
+export const ARTIFACTS: Artifact[] = createArtifacts();
 
 export const DICES: Dice[] = [
-  { id: 'd1', name: 'Spirit Branch', luckMultiplier: 1.0, cost: 200, color: '#8b4513', description: 'Cành cây khô chứa chút linh lực.' },
+  { id: 'd1', name: 'Spirit Branch', luckMultiplier: 1.0, cost: 200, color: '#8b4513', description: 'Cành cây chứa chút linh lực.' },
   { id: 'd2', name: 'Iron Talisman', luckMultiplier: 2.0, cost: 1500, color: '#94a3b8', description: 'Lá bùa sắt đúc thủ công.' },
   { id: 'd3', name: 'Silver Compass', luckMultiplier: 3.5, cost: 8000, color: '#e2e8f0', description: 'La bàn bạc chỉ hướng vận may.' },
-  { id: 'd4', name: 'Jade Totem', luckMultiplier: 6.0, cost: 35000, color: '#10b981', description: 'Vật phẩm thờ phụng của bộ lạc.' },
+  { id: 'd4', name: 'Jade Totem', luckMultiplier: 6.0, cost: 35000, color: '#10b981', description: 'Vật phẩm thờ phụng cổ.' },
   { id: 'd5', name: 'Obsidian Mirror', luckMultiplier: 10.0, cost: 120000, color: '#1e293b', description: 'Gương đen phản chiếu chân lý.' },
   { id: 'd6', name: 'Dragon Bone', luckMultiplier: 18.0, cost: 500000, color: '#fef3c7', description: 'Mảnh xương rồng cổ đại.' },
   { id: 'd7', name: 'Aether Lens', luckMultiplier: 30.0, cost: 2000000, color: '#60a5fa', description: 'Thấu kính nhìn thấu thực tại.' },
@@ -76,7 +79,7 @@ export const DICES: Dice[] = [
   { id: 'd9', name: 'Star-Fall Core', luckMultiplier: 100.0, cost: 50000000, color: '#c084fc', description: 'Lõi thiên thạch rơi từ trời cao.' },
   { id: 'd10', name: 'Phoenix Heart', luckMultiplier: 250.0, cost: 250000000, color: '#f43f5e', description: 'Trái tim rực cháy sự sống.' },
   { id: 'd11', name: 'Sun Shard', luckMultiplier: 600.0, cost: 1500000000, color: '#fbbf24', description: 'Mảnh vỡ tinh tú nguyên thủy.' },
-  { id: 'd12', name: 'Chronos Crystal', luckMultiplier: 1500.0, cost: 10000000000, color: '#ffffff', description: 'Pha lê kiểm soát dòng thời gian.' },
+  { id: 'd12', name: 'Chronos Crystal', luckMultiplier: 1500.0, cost: 10000000000, color: '#ffffff', description: 'Pha lê kiểm soát thời gian.' },
 ];
 
 export const PET_EGGS = [

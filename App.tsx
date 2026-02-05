@@ -4,7 +4,6 @@ import { ARTIFACTS, DICES, PETS, MUTATIONS, PET_EGGS } from './constants';
 import { Artifact, Dice, Pet, UserStats, InventoryArtifact, RarityTier } from './types';
 import { generateAuraLore } from './services/geminiService';
 
-// --- Hệ Thống Đa Ngôn Ngữ ---
 const translations = {
   vi: {
     manifest: 'Khởi Tạo',
@@ -40,7 +39,12 @@ const translations = {
     unknown: 'Cổ Vật Bí Ẩn',
     close: 'Đóng Lại',
     empty: 'Chỗ Trống',
-    restockIn: 'Nhập hàng sau:'
+    restockIn: 'Nhập hàng sau:',
+    rebirthBenefits: 'Quyền Lợi Vĩnh Viễn Khi Thăng Hoa:',
+    benefitSlot: '+1 Slot Tế Đàn vĩnh viễn',
+    benefitLuck: '+10% May mắn vĩnh viễn',
+    benefitIncome: '+25% Mana nhận được',
+    rebirthWarn: 'Mọi Mana, vật phẩm và nâng cấp sẽ bị reset (trừ Linh Thú).'
   },
   en: {
     manifest: 'Manifest',
@@ -76,19 +80,22 @@ const translations = {
     unknown: 'Unknown Artifact',
     close: 'Close',
     empty: 'Vacant',
-    restockIn: 'Restock in:'
+    restockIn: 'Restock in:',
+    rebirthBenefits: 'Permanent Ascension Benefits:',
+    benefitSlot: '+1 Permanent Altar Slot',
+    benefitLuck: '+10% Permanent Luck',
+    benefitIncome: '+25% Mana Multiplier',
+    rebirthWarn: 'All Mana, Items, and Upgrades will reset (except Familiars).'
   }
 };
 
-const ManaParticles: React.FC<{ color: string; count?: number; size?: number }> = ({ color, count = 10, size = 3 }) => {
-  return (
-    <div className="sparkle-container">
-      {[...Array(count)].map((_, i) => (
-        <div key={i} className="sparkle" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, background: color, animationDelay: `${Math.random() * 3}s`, width: `${Math.random() * size + 1}px`, height: `${Math.random() * size + 1}px`, boxShadow: `0 0 12px ${color}` }} />
-      ))}
-    </div>
-  );
-};
+const ManaParticles: React.FC<{ color: string; count?: number; size?: number }> = ({ color, count = 10, size = 3 }) => (
+  <div className="sparkle-container">
+    {[...Array(count)].map((_, i) => (
+      <div key={i} className="sparkle" style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, background: color, animationDelay: `${Math.random() * 3}s`, width: `${Math.random() * size + 1}px`, height: `${Math.random() * size + 1}px`, boxShadow: `0 0 12px ${color}` }} />
+    ))}
+  </div>
+);
 
 const getArtifactIcon = (tier: RarityTier) => {
   const mapping: Record<string, string> = {
@@ -112,13 +119,13 @@ export default function App() {
   const t = translations[lang];
 
   const [stats, setStats] = useState<UserStats>(() => {
-    const saved = localStorage.getItem('rng_ethereal_v7_stats');
+    const saved = localStorage.getItem('rng_ethereal_v9_stats');
     if (saved) return JSON.parse(saved);
     return {
       money: 1000,
       totalRolls: 0,
       activeArtifactIds: Array(6).fill(null),
-      ownedDice: { 'd1': 5 }, 
+      ownedDice: { 'd1': 5 },
       ownedPets: [],
       rebirths: 0,
       discoveredArtifactIds: [],
@@ -129,7 +136,7 @@ export default function App() {
   });
 
   const [inventory, setInventory] = useState<InventoryArtifact[]>(() => {
-    const saved = localStorage.getItem('rng_ethereal_v7_inv');
+    const saved = localStorage.getItem('rng_ethereal_v9_inv');
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -140,10 +147,10 @@ export default function App() {
     const newStock: Record<string, number> = {};
     DICES.forEach(d => {
       if (d.id === 'd1' || d.id === 'd2') {
-        newStock[d.id] = Math.floor(Math.random() * 11) + 5; // Luôn có 5-15
+        newStock[d.id] = Math.floor(Math.random() * 11) + 5;
       } else {
-        if (Math.random() < 0.25) {
-          newStock[d.id] = Math.floor(Math.random() * 5) + 1; // Hiếm hơn
+        if (Math.random() < 0.35) {
+          newStock[d.id] = Math.floor(Math.random() * 5) + 1;
         } else {
           newStock[d.id] = 0;
         }
@@ -153,19 +160,12 @@ export default function App() {
     setMarketTimer(180);
   }, []);
 
-  // Khởi tạo market lần đầu
-  useEffect(() => {
-    refreshMarket();
-  }, [refreshMarket]);
+  useEffect(() => { refreshMarket(); }, [refreshMarket]);
 
-  // Bộ đếm Market
   useEffect(() => {
     const interval = setInterval(() => {
       setMarketTimer(prev => {
-        if (prev <= 1) {
-          refreshMarket();
-          return 180;
-        }
+        if (prev <= 1) { refreshMarket(); return 180; }
         return prev - 1;
       });
     }, 1000);
@@ -184,12 +184,12 @@ export default function App() {
   const [currentLore, setCurrentLore] = useState<string | null>(null);
 
   useEffect(() => {
-    localStorage.setItem('rng_ethereal_v7_stats', JSON.stringify(stats));
-    localStorage.setItem('rng_ethereal_v7_inv', JSON.stringify(inventory));
+    localStorage.setItem('rng_ethereal_v9_stats', JSON.stringify(stats));
+    localStorage.setItem('rng_ethereal_v9_inv', JSON.stringify(inventory));
   }, [stats, inventory]);
 
   const getLuckMultiplier = useCallback(() => 1 + (stats.upgrades.luckLevel * 0.15), [stats.upgrades.luckLevel]);
-  const getRollCooldown = useCallback(() => Math.max(250, 1100 - (stats.upgrades.speedLevel * 100)), [stats.upgrades.speedLevel]);
+  const getRollCooldown = useCallback(() => Math.max(100, 1100 - (stats.upgrades.speedLevel * 100)), [stats.upgrades.speedLevel]);
   const getIncomeMultiplier = useCallback(() => (1 + stats.rebirths * 0.25) * (1 + stats.upgrades.moneyLevel * 0.2), [stats.rebirths, stats.upgrades.moneyLevel]);
 
   const getIncomePerSec = useCallback(() => {
@@ -235,7 +235,6 @@ export default function App() {
   }, [inventory, sortMethod]);
 
   const handleRoll = async (diceId: string, isAuto: boolean = false) => {
-    // KIỂM TRA DICE NGHIÊM NGẶT
     const diceCount = stats.ownedDice[diceId] || 0;
     if (isRolling || diceCount <= 0) {
         if (isAuto) setStats(prev => ({ ...prev, settings: { ...prev.settings, autoRoll: false } }));
@@ -248,7 +247,6 @@ export default function App() {
     const dice = DICES.find(d => d.id === diceId)!;
     const totalLuck = getTotalLuck() * dice.luckMultiplier;
 
-    // TRỪ DICE NGAY LẬP TỨC
     setStats(prev => ({
       ...prev,
       ownedDice: { ...prev.ownedDice, [diceId]: Math.max(0, (prev.ownedDice[diceId] || 0) - 1) },
@@ -290,7 +288,7 @@ export default function App() {
     setTimeout(() => {
         setIsRolling(false);
         if (!isAuto && selected.chance >= 1000) setShowCutscene(true);
-    }, isAuto ? 150 : 800);
+    }, isAuto ? 80 : 800);
   };
 
   useEffect(() => {
@@ -347,11 +345,11 @@ export default function App() {
         <div className={`fixed inset-0 z-[100] flex items-center justify-center cutscene-bg ${ARTIFACTS.find(a => a.id === rolledItem.artifactId)!.chance >= 10000 ? 'animate-shake' : ''}`}>
           <div className="flex flex-col items-center animate-aura-float text-center px-6">
             <div className="heading-font text-[#d4af37] text-sm uppercase tracking-[0.5em] mb-4">Divine Prophecy</div>
-            <h2 className={`heading-font text-6xl md:text-9xl font-black italic tracking-tighter glow-text mb-4 ${ARTIFACTS.find(a => a.id === rolledItem.artifactId)!.tier === RarityTier.SINGULARITY ? 'rainbow-glow' : ''} ${ARTIFACTS.find(a => a.id === rolledItem.artifactId)!.tier === RarityTier.BEYOND ? 'glitch-text' : ''}`} style={{ color: ARTIFACTS.find(a => a.id === rolledItem.artifactId)?.color }}>
+            <h2 className={`heading-font text-6xl md:text-9xl font-black italic tracking-tighter glow-text mb-4 ${ARTIFACTS.find(a => a.id === rolledItem.artifactId)!.tier === RarityTier.SINGULARITY ? 'rainbow-glow' : ''}`} style={{ color: ARTIFACTS.find(a => a.id === rolledItem.artifactId)?.color }}>
               {rolledItem.mutationName && <span className="text-2xl block mb-2 opacity-70 italic">{rolledItem.mutationName}</span>}
               {ARTIFACTS.find(a => a.id === rolledItem.artifactId)?.name}
             </h2>
-            <button onClick={() => setShowCutscene(false)} className="mt-16 px-12 py-3 rounded-none border border-[#d4af37] text-[#d4af37] heading-font text-xs uppercase tracking-[0.4em] hover:bg-[#d4af37]/10 transition-all">{t.claim}</button>
+            <button onClick={() => setShowCutscene(false)} className="mt-16 px-12 py-3 border border-[#d4af37] text-[#d4af37] heading-font text-xs uppercase tracking-[0.4em] hover:bg-[#d4af37]/10 transition-all">{t.claim}</button>
           </div>
         </div>
       )}
@@ -370,7 +368,7 @@ export default function App() {
 
       <div className="p-6 glass border-b border-[#d4af37]/20 flex justify-between items-center z-20">
         <div className="flex items-center gap-6">
-          <div className="w-12 h-12 rounded-full border-2 border-[#d4af37] flex items-center justify-center text-[#d4af37] shadow-[0_0_15px_rgba(212,175,55,0.3)]"><i className="fas fa-moon"></i></div>
+          <div className="w-12 h-12 rounded-full border-2 border-[#d4af37] flex items-center justify-center text-[#d4af37]"><i className="fas fa-moon"></i></div>
           <div>
             <h1 className="heading-font text-3xl font-bold text-white uppercase tracking-wider">Ethereal<span className="text-[#d4af37]">.RNG</span></h1>
             <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-[#d4af37]/60">{t.prestige} {stats.rebirths}</p>
@@ -395,7 +393,6 @@ export default function App() {
             { id: 'roll', icon: 'fa-wand-sparkles', label: t.manifest },
             { id: 'lab', icon: 'fa-mortar-pestle', label: t.alchemy },
             { id: 'forge', icon: 'fa-hat-wizard', label: t.altar },
-            // SỬA ICON GRIMOIRE - DÙNG FA-BOOK-OPEN ĐẢM BẢO HIỂN THỊ
             { id: 'inv', icon: 'fa-book-open', label: t.grimoire },
             { id: 'index', icon: 'fa-scroll', label: t.archives },
             { id: 'shop', icon: 'fa-gem', label: t.bazaar },
@@ -418,7 +415,7 @@ export default function App() {
               <div className="mb-10 flex justify-between items-center">
                 <h2 className="heading-font text-4xl text-white uppercase italic">{lang === 'vi' ? 'Linh Hồn Vũ Trụ' : 'Celestial Resonance'}</h2>
                 <div className="flex gap-4">
-                    <button onClick={() => setStats(prev => ({ ...prev, settings: { ...prev.settings, autoRoll: !prev.settings.autoRoll } }))} className={`px-6 py-3 border transition-all flex items-center gap-3 ${stats.settings.autoRoll ? 'bg-[#d4af37]/10 text-[#d4af37] border-[#d4af37] shadow-[0_0_15px_rgba(212,175,55,0.2)]' : 'bg-white/5 text-slate-500 border-white/5'}`}>
+                    <button onClick={() => setStats(prev => ({ ...prev, settings: { ...prev.settings, autoRoll: !prev.settings.autoRoll } }))} className={`px-6 py-3 border transition-all flex items-center gap-3 ${stats.settings.autoRoll ? 'bg-[#d4af37]/10 text-[#d4af37] border-[#d4af37]' : 'bg-white/5 text-slate-500 border-white/5'}`}>
                         <div className={`w-1.5 h-1.5 rounded-full ${stats.settings.autoRoll ? 'bg-[#d4af37] animate-ping' : 'bg-slate-700'}`}></div>
                         <span className="heading-font text-[10px] uppercase tracking-widest">{t.autoRoll}</span>
                     </button>
@@ -432,19 +429,13 @@ export default function App() {
               </div>
 
               <div className="flex-1 flex flex-col items-center justify-center rounded-none border border-[#d4af37]/10 p-16 relative overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
-                    <div className="w-[600px] h-[600px] border-4 border-dashed border-[#d4af37] rounded-full animate-magic-circle flex items-center justify-center">
-                        <div className="w-[400px] h-[400px] border-2 border-double border-[#d4af37] rounded-full"></div>
-                    </div>
-                </div>
-
                 {isRolling && !stats.settings.autoRoll ? (
                   <div className="flex flex-col items-center gap-8 animate-pulse">
                     <div className="w-40 h-40 relative flex items-center justify-center">
                         <div className="absolute inset-0 border-2 border-[#d4af37]/30 rounded-full animate-spin"></div>
                         <i className="fas fa-sparkles text-4xl text-[#d4af37]"></i>
                     </div>
-                    <div className="heading-font text-2xl text-[#d4af37] tracking-[0.3em] uppercase glow-text">{t.channeling}</div>
+                    <div className="heading-font text-2xl text-[#d4af37] tracking-[0.3em] uppercase">{t.channeling}</div>
                   </div>
                 ) : rolledItem ? (
                   <div className="flex flex-col items-center animate-aura-float text-center max-w-sm z-10">
@@ -453,12 +444,11 @@ export default function App() {
                       return (
                         <>
                           <ManaParticles color={art.color} count={20} />
-                          <div className="heading-font text-[10px] uppercase text-[#d4af37] tracking-[0.5em] mb-6">{lang === 'vi' ? 'Cổ Vật Xuất Hiện' : 'Object Manifested'}</div>
-                          <i className={`fas ${getArtifactIcon(art.tier)} text-8xl mb-10 ${art.chance >= 1000 ? 'rarity-glow' : ''}`} style={{ color: art.color }}></i>
+                          <i className={`fas ${getArtifactIcon(art.tier)} text-8xl mb-10`} style={{ color: art.color }}></i>
                           <h3 className="heading-font text-5xl font-bold tracking-tight text-white uppercase">{rolledItem.mutationName && <span className="text-xl block mb-2 opacity-60 italic">{rolledItem.mutationName}</span>}{art.name}</h3>
                           <div className="flex gap-4 w-full justify-center mt-12">
-                            <button onClick={() => setRolledItem(null)} className="flex-1 px-8 py-5 border border-[#d4af37] text-[#d4af37] heading-font text-[10px] uppercase tracking-widest hover:bg-[#d4af37]/10 transition-all">{t.repeat}</button>
-                            <button onClick={() => { equipOrUnequip(rolledItem.instanceId); setRolledItem(null); }} className="flex-1 px-8 py-5 bg-[#d4af37] text-black heading-font text-[10px] uppercase tracking-widest hover:brightness-125 transition-all">{t.sacrifice}</button>
+                            <button onClick={() => setRolledItem(null)} className="flex-1 px-8 py-5 border border-[#d4af37] text-[#d4af37] heading-font text-[10px] uppercase tracking-widest">{t.repeat}</button>
+                            <button onClick={() => { equipOrUnequip(rolledItem.instanceId); setRolledItem(null); }} className="flex-1 px-8 py-5 bg-[#d4af37] text-black heading-font text-[10px] uppercase tracking-widest">{t.sacrifice}</button>
                           </div>
                         </>
                       );
@@ -470,13 +460,10 @@ export default function App() {
                       const count = stats.ownedDice[dice.id] || 0;
                       if (count <= 0) return null;
                       return (
-                        <button key={dice.id} onClick={() => { handleRoll(dice.id); setStats(prev => ({ ...prev, settings: { ...prev.settings, selectedDiceId: dice.id } })) }} className={`group glass p-6 rounded-none border transition-all flex flex-col items-center gap-3 relative ${stats.settings.selectedDiceId === dice.id ? 'border-[#d4af37] bg-[#d4af37]/5 shadow-[0_0_20px_rgba(212,175,55,0.1)]' : 'border-[#d4af37]/10 hover:border-[#d4af37]/30'}`}>
+                        <button key={dice.id} onClick={() => { handleRoll(dice.id); setStats(prev => ({ ...prev, settings: { ...prev.settings, selectedDiceId: dice.id } })) }} className={`group glass p-6 rounded-none border transition-all flex flex-col items-center gap-3 relative ${stats.settings.selectedDiceId === dice.id ? 'border-[#d4af37] bg-[#d4af37]/5' : 'border-[#d4af37]/10 hover:border-[#d4af37]/30'}`}>
                           <div className="absolute top-2 right-2 heading-font text-[9px] text-[#d4af37]">x{count}</div>
                           <i className="fas fa-dice-d20 text-3xl" style={{ color: dice.color }}></i>
-                          <div className="text-center">
-                            <div className="heading-font text-[9px] text-white uppercase truncate w-24">{dice.name}</div>
-                            <div className="text-[7px] font-bold text-[#d4af37] mt-1 uppercase">+{dice.luckMultiplier}x</div>
-                          </div>
+                          <div className="heading-font text-[9px] text-white uppercase truncate w-24">{dice.name}</div>
                         </button>
                       );
                     })}
@@ -490,25 +477,22 @@ export default function App() {
             <div className="max-w-7xl mx-auto pb-24">
                <div className="flex flex-col gap-10 mb-14">
                 <div className="flex justify-between items-end">
-                  <div>
-                    <h2 className="heading-font text-5xl text-white uppercase italic tracking-widest">{t.grimoire}</h2>
-                    <p className="text-[#d4af37]/60 italic font-serif text-lg mt-2">{lang === 'vi' ? 'Linh hồn cổ vật đã được triệu hồi.' : 'Manifested spirits stored within.'}</p>
-                  </div>
+                  <h2 className="heading-font text-5xl text-white uppercase italic tracking-widest">{t.grimoire}</h2>
                   <div className="flex gap-4">
                     <button onClick={() => {
                         const sorted = [...inventory].sort((a, b) => b.value - a.value);
                         const numSlots = stats.activeArtifactIds.length;
                         setStats(prev => ({ ...prev, activeArtifactIds: [...sorted.slice(0, numSlots).map(i => i.instanceId), ...Array(Math.max(0, numSlots - sorted.length)).fill(null)].slice(0, numSlots) }));
-                    }} className="px-8 py-4 border border-emerald-500/40 text-emerald-400 heading-font text-[10px] uppercase tracking-widest hover:bg-emerald-500/10 transition-all">{t.best}</button>
+                    }} className="px-8 py-4 border border-emerald-500/40 text-emerald-400 heading-font text-[10px] uppercase">{t.best}</button>
                     <button onClick={() => { if (confirm(t.burnCommons)) setInventory(prev => prev.filter(i => {
                         const art = ARTIFACTS.find(a => a.id === i.artifactId)!;
                         return art.tier !== RarityTier.COMMON || stats.activeArtifactIds.includes(i.instanceId);
-                    })); }} className="px-8 py-4 border border-[#d4af37]/30 text-[#d4af37]/60 heading-font text-[10px] uppercase tracking-widest hover:text-[#d4af37] transition-all">{t.burnCommons}</button>
+                    })); }} className="px-8 py-4 border border-[#d4af37]/30 text-[#d4af37]/60 heading-font text-[10px] uppercase">{t.burnCommons}</button>
                   </div>
                 </div>
                 <div className="flex items-center gap-6 glass p-2 w-fit border-[#d4af37]/20">
                   {['value', 'rarity', 'alpha'].map(m => (
-                    <button key={m} onClick={() => setSortMethod(m as any)} className={`px-6 py-2 heading-font text-[10px] uppercase tracking-widest transition-all ${sortMethod === m ? 'bg-[#d4af37] text-black shadow-lg' : 'text-[#d4af37]/40 hover:text-[#d4af37]'}`}>{m}</button>
+                    <button key={m} onClick={() => setSortMethod(m as any)} className={`px-6 py-2 heading-font text-[10px] uppercase transition-all ${sortMethod === m ? 'bg-[#d4af37] text-black shadow-lg' : 'text-[#d4af37]/40 hover:text-[#d4af37]'}`}>{m}</button>
                   ))}
                 </div>
               </div>
@@ -518,21 +502,17 @@ export default function App() {
                   if (!art) return null;
                   const isActive = stats.activeArtifactIds.includes(item.instanceId);
                   const isDeleting = deletingId === item.instanceId;
-                  const isUltra = art.chance >= 10000;
                   return (
                     <div key={item.instanceId} className="relative group">
-                      <button onClick={() => equipOrUnequip(item.instanceId)} className={`w-full glass p-6 rounded-none border transition-all flex flex-col items-center text-center ${isActive ? 'border-[#d4af37] bg-[#d4af37]/10' : 'border-[#d4af37]/10 hover:border-[#d4af37]/60'} ${isUltra ? 'rarity-glow' : ''}`}>
-                        <i className={`fas ${getArtifactIcon(art.tier)} text-3xl mb-4 ${art.tier === RarityTier.SINGULARITY ? 'rainbow-glow' : ''} ${art.tier === RarityTier.BEYOND ? 'glitch-text' : ''}`} style={{ color: art.color }}></i>
-                        <div className="heading-font text-[10px] text-white uppercase truncate w-full">
-                          {item.mutationName && <span className="block text-[#d4af37] text-[7px] italic mb-1">{item.mutationName}</span>}
-                          {art.name}
-                        </div>
+                      <button onClick={() => equipOrUnequip(item.instanceId)} className={`w-full glass p-6 rounded-none border transition-all flex flex-col items-center text-center ${isActive ? 'border-[#d4af37] bg-[#d4af37]/10' : 'border-[#d4af37]/10 hover:border-[#d4af37]/60'}`}>
+                        <i className={`fas ${getArtifactIcon(art.tier)} text-3xl mb-4`} style={{ color: art.color }}></i>
+                        <div className="heading-font text-[10px] text-white uppercase truncate w-full">{art.name}</div>
                         <div className="text-emerald-400/70 text-[8px] font-mono mt-2 italic">+{item.value.toLocaleString()} /s</div>
                         {isActive && <div className="mt-3 heading-font text-[6px] text-[#d4af37] uppercase tracking-[0.2em] animate-pulse">{t.enrolled}</div>}
                       </button>
                       {!isActive && (
-                        <button onClick={(e) => { e.preventDefault(); confirmDelete(item.instanceId); }} className={`absolute -top-3 -right-3 w-10 h-10 rounded-full flex items-center justify-center transition-all z-10 border-2 shadow-2xl ${isDeleting ? 'bg-white text-red-600 border-red-600 scale-110' : 'bg-red-800 text-white border-[#d4af37]/20 hover:scale-110'}`}>
-                          {isDeleting ? <span className="heading-font text-[8px] uppercase">{t.burn}</span> : <i className="fas fa-fire-alt text-sm"></i>}
+                        <button onClick={(e) => { e.preventDefault(); confirmDelete(item.instanceId); }} className={`absolute -top-3 -right-3 w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all shadow-xl ${isDeleting ? 'bg-white text-red-600 border-red-600 scale-110' : 'bg-red-800 text-white border-[#d4af37]/20 hover:scale-110'}`}>
+                          {isDeleting ? <span className="text-[8px]">{t.burn}</span> : <i className="fas fa-fire-alt text-sm"></i>}
                         </button>
                       )}
                     </div>
@@ -555,11 +535,10 @@ export default function App() {
                     {DICES.map(dice => {
                         const stock = marketStock[dice.id] || 0;
                         return (
-                            <div key={dice.id} className="glass p-8 border border-[#d4af37]/10 flex flex-col items-center text-center gap-4 hover:border-[#d4af37]/50 transition-all relative">
+                            <div key={dice.id} className="glass p-8 border border-[#d4af37]/10 flex flex-col items-center text-center gap-4 relative hover:border-[#d4af37]/50 transition-all">
                                 {stock > 0 && <div className="absolute top-2 right-2 text-[8px] heading-font text-[#d4af37]">{t.stock} {stock}</div>}
                                 <i className="fas fa-dice text-4xl" style={{ color: dice.color }}></i>
                                 <div className="heading-font text-[11px] text-white uppercase truncate w-full">{dice.name}</div>
-                                <div className="text-[8px] text-[#d4af37] font-bold">Luck: {dice.luckMultiplier}x</div>
                                 <button disabled={stock <= 0 || stats.money < dice.cost} onClick={() => { if (stock > 0 && stats.money >= dice.cost) { setMarketStock(prev => ({ ...prev, [dice.id]: prev[dice.id] - 1 })); setStats(prev => ({ ...prev, money: prev.money - dice.cost, ownedDice: { ...prev.ownedDice, [dice.id]: (prev.ownedDice[dice.id] || 0) + 1 } })); } }} className={`w-full py-2 text-[9px] heading-font border transition-all ${stock > 0 && stats.money >= dice.cost ? 'border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37] hover:text-black' : 'border-white/5 text-slate-800 cursor-not-allowed'}`}>
                                     {stock > 0 ? dice.cost.toLocaleString() : 'SOLD OUT'}
                                 </button>
@@ -568,6 +547,43 @@ export default function App() {
                     })}
                 </div>
              </div>
+          )}
+
+          {activeTab === 'rebirth' && (
+            <div className="max-w-4xl mx-auto flex flex-col items-center h-full justify-center pb-20">
+                 <i className="fas fa-infinity text-[8rem] text-[#d4af37] mb-10 animate-aura-float glow-text"></i>
+                 <h2 className="heading-font text-6xl text-white uppercase italic mb-8">{t.transcend}</h2>
+                 
+                 <div className="glass p-10 border border-[#d4af37]/30 max-w-xl w-full text-center space-y-6 mb-12 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent"></div>
+                    <h3 className="heading-font text-[#d4af37] text-lg uppercase tracking-widest">{t.rebirthBenefits}</h3>
+                    <ul className="text-slate-300 space-y-3 font-serif italic text-lg">
+                        <li className="flex items-center justify-center gap-3"><i className="fas fa-plus-circle text-[#d4af37] text-xs"></i> {t.benefitSlot}</li>
+                        <li className="flex items-center justify-center gap-3"><i className="fas fa-plus-circle text-[#d4af37] text-xs"></i> {t.benefitLuck}</li>
+                        <li className="flex items-center justify-center gap-3"><i className="fas fa-plus-circle text-[#d4af37] text-xs"></i> {t.benefitIncome}</li>
+                    </ul>
+                    <p className="text-red-400/60 text-[10px] uppercase tracking-widest font-black pt-4">{t.rebirthWarn}</p>
+                 </div>
+
+                 <button onClick={() => {
+                   const cost = 5000000 * Math.pow(10, stats.rebirths);
+                   if (stats.money >= cost) {
+                    if (confirm(t.transcend + "?")) {
+                      setStats(prev => ({
+                        ...prev,
+                        money: 1000,
+                        rebirths: prev.rebirths + 1,
+                        activeArtifactIds: [...prev.activeArtifactIds, null], // Tăng slot vĩnh viễn
+                        upgrades: { luckLevel: 0, speedLevel: 0, moneyLevel: 0 }
+                      }));
+                      setInventory([]);
+                      setActiveTab('roll');
+                    }
+                   }
+                 }} className={`px-16 py-8 border-2 heading-font text-2xl uppercase transition-all ${stats.money >= 5000000 * Math.pow(10, stats.rebirths) ? 'border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37] hover:text-black shadow-[0_0_30px_rgba(212,175,55,0.2)]' : 'border-white/5 text-slate-800 cursor-not-allowed'}`}>
+                   {t.transcend} ({(5000000 * Math.pow(10, stats.rebirths)).toLocaleString()} Mana)
+                 </button>
+            </div>
           )}
 
           {activeTab === 'lab' && (
@@ -582,12 +598,15 @@ export default function App() {
                         const cost = 1000 * Math.pow(2.5, upgrade.level);
                         const canAfford = stats.money >= cost;
                         return (
-                            <div key={upgrade.type} className="glass p-8 border border-[#d4af37]/10 flex items-center justify-between group hover:border-[#d4af37]/30">
+                            <div key={upgrade.type} className="glass p-8 border border-[#d4af37]/10 flex items-center justify-between group hover:border-[#d4af37]/30 transition-all">
                                 <div className="flex items-center gap-6">
                                     <i className={`fas ${upgrade.icon} text-3xl text-[#d4af37]`}></i>
-                                    <div><h4 className="heading-font text-xl text-white">{upgrade.label} (Rank {upgrade.level})</h4><p className="text-xs text-slate-500 italic mt-1">{lang === 'vi' ? 'Sức mạnh thần bí tiềm tàng.' : 'Ancient mystical powers.'}</p></div>
+                                    <div>
+                                        <h4 className="heading-font text-xl text-white">{upgrade.label} (Rank {upgrade.level})</h4>
+                                        <p className="text-xs text-slate-500 italic mt-1">Nâng tầm sức mạnh tâm linh vĩnh cửu.</p>
+                                    </div>
                                 </div>
-                                <button onClick={() => { if (canAfford) setStats(prev => ({ ...prev, money: prev.money - cost, upgrades: { ...prev.upgrades, [`${upgrade.type}Level`]: upgrade.level + 1 } })); }} disabled={!canAfford} className={`px-8 py-3 heading-font text-[10px] uppercase border transition-all ${canAfford ? 'border-[#d4af37] text-[#d4af37]' : 'border-white/5 text-slate-800'}`}>Pay {Math.floor(cost).toLocaleString()}</button>
+                                <button onClick={() => { if (canAfford) setStats(prev => ({ ...prev, money: prev.money - cost, upgrades: { ...prev.upgrades, [`${upgrade.type}Level`]: upgrade.level + 1 } })); }} disabled={!canAfford} className={`px-8 py-3 heading-font text-[10px] uppercase border transition-all ${canAfford ? 'border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37] hover:text-black' : 'border-white/5 text-slate-800'}`}>Pay {Math.floor(cost).toLocaleString()}</button>
                             </div>
                         )
                     })}
@@ -605,28 +624,24 @@ export default function App() {
                   return (
                     <div key={idx} className="aspect-square glass rounded-full border-2 border-[#d4af37]/10 flex flex-col items-center justify-center p-8 relative group hover:border-[#d4af37]/40 shadow-2xl transition-all">
                       {item && artifact ? (
-                        <><i className={`fas ${getArtifactIcon(artifact.tier)} text-6xl mb-6 ${artifact.tier === RarityTier.SINGULARITY ? 'rainbow-glow' : ''}`} style={{ color: artifact.color }}></i><div className="heading-font text-lg text-white uppercase">{artifact.name}</div><div className="text-[#d4af37] text-[10px] mt-4">+{Math.floor(item.value * getIncomeMultiplier()).toLocaleString()} /s</div><button onClick={() => equipOrUnequip(instanceId!)} className="absolute top-4 right-4 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"><i className="fas fa-hand-holding-magic text-xl"></i></button></>
-                      ) : <div className="text-white/5 flex flex-col items-center gap-2"><i className="fas fa-star text-4xl opacity-10 animate-pulse"></i><span className="text-[8px] uppercase">{t.empty}</span></div>}
+                        <>
+                          <i className={`fas ${getArtifactIcon(artifact.tier)} text-6xl mb-6 ${artifact.tier === RarityTier.SINGULARITY ? 'rainbow-glow' : ''}`} style={{ color: artifact.color }}></i>
+                          <div className="heading-font text-lg text-white uppercase">{artifact.name}</div>
+                          <div className="text-[#d4af37] text-[10px] mt-4">+{Math.floor(item.value * getIncomeMultiplier()).toLocaleString()} /s</div>
+                          <button onClick={() => equipOrUnequip(instanceId!)} className="absolute top-4 right-4 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all">
+                            <i className="fas fa-hand-holding-magic text-xl"></i>
+                          </button>
+                        </>
+                      ) : (
+                        <div className="text-white/5 flex flex-col items-center gap-2">
+                          <i className="fas fa-star text-4xl opacity-10 animate-pulse"></i>
+                          <span className="text-[8px] uppercase">{t.empty}</span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
-            </div>
-          )}
-
-          {activeTab === 'rebirth' && (
-            <div className="max-w-4xl mx-auto flex flex-col items-center text-center h-full justify-center pb-20">
-                 <i className="fas fa-infinity text-[8rem] text-[#d4af37] mb-10 glow-text animate-aura-float"></i>
-                 <h2 className="heading-font text-6xl text-white uppercase italic">{t.transcend}</h2>
-                 <p className="text-slate-400 text-xl mt-6 max-w-lg font-serif italic">"{lang === 'vi' ? 'Sẵn sàng bỏ lại tất cả để đạt tới cảnh giới tối cao?' : 'Ready to leave it all behind for a higher realm?'}"</p>
-                 <button onClick={() => {
-                   const cost = 5000000 * Math.pow(10, stats.rebirths);
-                   if (stats.money >= cost) {
-                    if (confirm(t.transcend + "?")) { setStats(prev => ({ ...prev, money: 1000, rebirths: prev.rebirths + 1, activeArtifactIds: [...prev.activeArtifactIds, null], upgrades: { luckLevel: 0, speedLevel: 0, moneyLevel: 0 } })); setInventory([]); setActiveTab('forge'); }
-                   }
-                 }} className={`mt-16 px-16 py-8 border-2 heading-font text-2xl uppercase transition-all ${stats.money >= 5000000 * Math.pow(10, stats.rebirths) ? 'border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37] hover:text-black shadow-[0_0_30px_rgba(212,175,55,0.2)]' : 'border-white/5 text-slate-800'}`}>
-                   {t.transcend} ({(5000000 * Math.pow(10, stats.rebirths)).toLocaleString()} Mana)
-                 </button>
             </div>
           )}
 
@@ -635,14 +650,19 @@ export default function App() {
               <h2 className="heading-font text-5xl text-white uppercase italic text-center mb-16 tracking-widest">{t.archives}</h2>
               {Object.values(RarityTier).map(tier => {
                   const items = ARTIFACTS.filter(a => a.tier === tier);
+                  if (items.length === 0) return null;
                   return (
                     <div key={tier} className="mb-14">
-                      <h3 className="heading-font text-[11px] uppercase tracking-[0.5em] text-[#d4af37]/50 mb-8 flex items-center gap-4"><div className="h-px flex-1 bg-gradient-to-r from-transparent to-[#d4af37]/20"></div>{tier}<div className="h-px flex-1 bg-gradient-to-l from-transparent to-[#d4af37]/20"></div></h3>
+                      <h3 className="heading-font text-[11px] uppercase tracking-[0.5em] text-[#d4af37]/50 mb-8 flex items-center gap-4">
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[#d4af37]/20"></div>
+                        {tier}
+                        <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[#d4af37]/20"></div>
+                      </h3>
                       <div className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-4">
                         {items.map(art => {
                           const isDiscovered = stats.discoveredArtifactIds.includes(art.id);
                           return (
-                            <div key={art.id} onClick={() => showLore(art)} className={`glass p-4 border transition-all flex flex-col items-center text-center cursor-pointer ${isDiscovered ? 'border-[#d4af37]/30 hover:scale-110' : 'border-white/5 opacity-20'}`}>
+                            <div key={art.id} onClick={() => showLore(art)} className={`glass p-4 border transition-all flex flex-col items-center text-center cursor-pointer ${isDiscovered ? 'border-[#d4af37]/30 hover:scale-110 shadow-lg' : 'border-white/5 opacity-20'}`}>
                               <i className={`fas ${getArtifactIcon(art.tier)} text-lg mb-2`} style={{ color: isDiscovered ? art.color : '#334155' }}></i>
                               <div className="heading-font text-[7px] text-white uppercase truncate w-full">{isDiscovered ? art.name : '???'}</div>
                             </div>
@@ -667,7 +687,7 @@ export default function App() {
                     {Array.from(new Set(stats.ownedPets)).map((petId, idx) => {
                         const pet = PETS.find(p => p.id === petId)!;
                         const count = stats.ownedPets.filter(id => id === petId).length;
-                        return (<div key={idx} className="glass p-4 border border-white/5 flex flex-col items-center gap-2 relative"><span className="absolute top-1 right-1 text-[8px] text-[#d4af37]">x{count}</span><i className="fas fa-paw text-xl" style={{ color: pet.color }}></i><span className="text-[8px] uppercase heading-font truncate w-full">{pet.name}</span></div>);
+                        return (<div key={idx} className="glass p-4 border border-white/5 flex flex-col items-center gap-2 relative transition-all hover:scale-110"><span className="absolute top-1 right-1 text-[8px] text-[#d4af37]">x{count}</span><i className="fas fa-paw text-xl" style={{ color: pet.color }}></i><span className="text-[8px] uppercase heading-font truncate w-full">{pet.name}</span></div>);
                     })}
                 </div>
              </div>
