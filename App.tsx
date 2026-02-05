@@ -38,7 +38,7 @@ const translations = {
     burnCommons: 'Hóa Giải Đồ Thường',
     unknown: 'Cổ Vật Bí Ẩn',
     close: 'Đóng Lại',
-    empty: 'Chỗ Trống',
+    empty: 'Trống',
     restockIn: 'Nhập hàng sau:',
     rebirthBenefits: 'Quyền Lợi Vĩnh Viễn',
     benefitSlot: 'Slot Tế Đàn',
@@ -80,7 +80,7 @@ const translations = {
     burnCommons: 'Burn Commons',
     unknown: 'Unknown Artifact',
     close: 'Close',
-    empty: 'Vacant',
+    empty: 'Empty',
     restockIn: 'Restock in:',
     rebirthBenefits: 'Permanent Benefits',
     benefitSlot: 'Altar Slot',
@@ -121,7 +121,7 @@ export default function App() {
   const t = translations[lang];
 
   const [stats, setStats] = useState<UserStats>(() => {
-    const saved = localStorage.getItem('rng_ethereal_v10_stats');
+    const saved = localStorage.getItem('rng_ethereal_v12_stats');
     if (saved) return JSON.parse(saved);
     return {
       money: 1000,
@@ -138,7 +138,7 @@ export default function App() {
   });
 
   const [inventory, setInventory] = useState<InventoryArtifact[]>(() => {
-    const saved = localStorage.getItem('rng_ethereal_v10_inv');
+    const saved = localStorage.getItem('rng_ethereal_v12_inv');
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -186,8 +186,8 @@ export default function App() {
   const [currentLore, setCurrentLore] = useState<string | null>(null);
 
   useEffect(() => {
-    localStorage.setItem('rng_ethereal_v10_stats', JSON.stringify(stats));
-    localStorage.setItem('rng_ethereal_v10_inv', JSON.stringify(inventory));
+    localStorage.setItem('rng_ethereal_v12_stats', JSON.stringify(stats));
+    localStorage.setItem('rng_ethereal_v12_inv', JSON.stringify(inventory));
   }, [stats, inventory]);
 
   const getLuckMultiplier = useCallback(() => 1 + (stats.upgrades.luckLevel * 0.15), [stats.upgrades.luckLevel]);
@@ -214,7 +214,8 @@ export default function App() {
 
   const getTotalLuck = useCallback(() => {
     let boost = 1.0;
-    stats.ownedPets.forEach(id => {
+    const uniqueOwnedPetIds = Array.from(new Set(stats.ownedPets));
+    uniqueOwnedPetIds.forEach(id => {
       const pet = PETS.find(p => p.id === id);
       if (pet) boost += pet.luckBoost;
     });
@@ -290,7 +291,7 @@ export default function App() {
     setTimeout(() => {
         setIsRolling(false);
         if (!isAuto && selected.chance >= 1000) setShowCutscene(true);
-    }, isAuto ? 70 : 800);
+    }, isAuto ? 50 : 800);
   };
 
   useEffect(() => {
@@ -336,6 +337,27 @@ export default function App() {
     setCurrentLore(lore);
   };
 
+  const magicRings = useMemo(() => {
+    const totalSlots = stats.activeArtifactIds.length;
+    const rings = [];
+    let currentSlot = 0;
+    let ringIdx = 0;
+    
+    while (currentSlot < totalSlots) {
+      const slotsInRing = ringIdx === 0 ? 3 : 5;
+      const ringSlots = stats.activeArtifactIds.slice(currentSlot, currentSlot + slotsInRing);
+      rings.push({
+        radius: 120 + ringIdx * 110,
+        slots: ringSlots,
+        startIdx: currentSlot,
+        isCCW: ringIdx % 2 !== 0
+      });
+      currentSlot += slotsInRing;
+      ringIdx++;
+    }
+    return rings;
+  }, [stats.activeArtifactIds]);
+
   return (
     <div className="h-screen w-full flex flex-col overflow-hidden text-[#f8fafc]">
       
@@ -370,7 +392,7 @@ export default function App() {
 
       <div className="p-6 glass border-b border-[#d4af37]/20 flex justify-between items-center z-20">
         <div className="flex items-center gap-6">
-          <div className="w-12 h-12 rounded-full border-2 border-[#d4af37] flex items-center justify-center text-[#d4af37]"><i className="fas fa-moon"></i></div>
+          <div className="w-12 h-12 rounded-full border-2 border-[#d4af37] flex items-center justify-center text-[#d4af37] shadow-[0_0_10px_rgba(212,175,55,0.3)]"><i className="fas fa-moon"></i></div>
           <div>
             <h1 className="heading-font text-3xl font-bold text-white uppercase tracking-wider">Ethereal<span className="text-[#d4af37]">.RNG</span></h1>
             <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-[#d4af37]/60">{t.prestige} {stats.rebirths}</p>
@@ -410,10 +432,10 @@ export default function App() {
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-12 custom-scrollbar relative">
+        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar relative">
           
           {activeTab === 'roll' && (
-            <div className="max-w-4xl mx-auto h-full flex flex-col">
+            <div className="max-w-4xl mx-auto h-full flex flex-col p-8">
               <div className="mb-10 flex justify-between items-center">
                 <h2 className="heading-font text-4xl text-white uppercase italic">{lang === 'vi' ? 'Linh Hồn Vũ Trụ' : 'Celestial Resonance'}</h2>
                 <div className="flex gap-4">
@@ -475,8 +497,75 @@ export default function App() {
             </div>
           )}
 
+          {activeTab === 'forge' && (
+            <div className="w-full min-h-full flex flex-col items-center justify-center p-12 overflow-hidden relative">
+              <h2 className="heading-font text-5xl text-white uppercase italic mb-8 z-10">{t.altar}</h2>
+              <p className="text-[10px] heading-font text-[#d4af37] uppercase tracking-[0.5em] mb-12 opacity-50 z-10">Eternal Resonance Chamber</p>
+              
+              <div className="relative flex items-center justify-center w-[800px] h-[800px] transition-all duration-1000">
+                <div className="absolute w-32 h-32 rounded-full border-4 border-[#d4af37] flex items-center justify-center bg-[#d4af37]/5 z-20 shadow-[0_0_50px_rgba(212,175,55,0.4)] animate-pulse-slow">
+                   <i className="fas fa-atom text-4xl text-[#d4af37]"></i>
+                </div>
+
+                {magicRings.map((ring, rIdx) => (
+                  <div key={rIdx} 
+                    className={`absolute rounded-full border border-[#d4af37]/20 flex items-center justify-center transition-all duration-1000 ${ring.isCCW ? 'animate-rotate-ccw' : 'animate-magic-circle'}`}
+                    style={{ width: `${ring.radius * 2}px`, height: `${ring.radius * 2}px` }}
+                  >
+                    {ring.slots.map((instanceId, sIdx) => {
+                      const item = inventory.find(inv => inv.instanceId === instanceId);
+                      const artifact = item ? ARTIFACTS.find(a => a.id === item.artifactId) : null;
+                      const angle = (sIdx / ring.slots.length) * 2 * Math.PI;
+                      const x = Math.cos(angle) * ring.radius;
+                      const y = Math.sin(angle) * ring.radius;
+
+                      return (
+                        <div 
+                          key={sIdx}
+                          className="absolute flex items-center justify-center group"
+                          style={{ 
+                            transform: `translate(${x}px, ${y}px) rotate(${ring.isCCW ? '' : '-'}0deg)`, 
+                            transition: 'all 0.5s ease'
+                          }}
+                        >
+                          <div 
+                            onClick={() => { if (instanceId) equipOrUnequip(instanceId); }}
+                            className={`w-24 h-24 rounded-full border-2 flex flex-col items-center justify-center cursor-pointer transition-all duration-500 hover:scale-125 hover:z-30 shadow-2xl ${item ? 'bg-black/80' : 'bg-[#d4af37]/5 border-dashed border-[#d4af37]/10'}`}
+                            style={{ 
+                              borderColor: artifact?.color || 'rgba(212,175,55,0.2)',
+                              color: artifact?.color || '#334155',
+                              boxShadow: item ? `0 0 25px ${artifact?.color}44` : 'none'
+                            }}
+                          >
+                            {item && artifact ? (
+                              <>
+                                <i className={`fas ${getArtifactIcon(artifact.tier)} text-2xl mb-1 ${artifact.tier === RarityTier.SINGULARITY ? 'rainbow-glow' : ''}`}></i>
+                                <div className="text-[6px] heading-font uppercase text-white truncate px-2 text-center">{artifact.name}</div>
+                                <div className="text-[5px] text-emerald-400 mt-1">+{Math.floor(item.value * getIncomeMultiplier())}</div>
+                              </>
+                            ) : (
+                              <div className="flex flex-col items-center opacity-30">
+                                <i className="fas fa-plus text-xs mb-1"></i>
+                                <span className="text-[5px] heading-font uppercase">{t.empty}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="absolute w-[200px] h-px bg-gradient-to-r from-transparent via-[#d4af37]/10 to-transparent -z-10 opacity-20 group-hover:opacity-100 transition-opacity"></div>
+                        </div>
+                      );
+                    })}
+                    <div className="absolute inset-0 border border-[#d4af37]/10 rounded-full scale-[1.05] pointer-events-none"></div>
+                  </div>
+                ))}
+                
+                <div className="absolute w-[1000px] h-[1000px] border border-[#d4af37]/5 rounded-full animate-rotate-ccw opacity-10"></div>
+                <div className="absolute w-[1200px] h-[1200px] border-2 border-dashed border-[#d4af37]/5 rounded-full animate-magic-circle opacity-5"></div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'inv' && (
-            <div className="max-w-7xl mx-auto pb-24">
+            <div className="max-w-7xl mx-auto pb-24 p-8">
                <div className="flex flex-col gap-10 mb-14">
                 <div className="flex justify-between items-end">
                   <h2 className="heading-font text-5xl text-white uppercase italic tracking-widest">{t.grimoire}</h2>
@@ -498,23 +587,54 @@ export default function App() {
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-8">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
                 {sortedInventory.map((item) => {
                   const art = ARTIFACTS.find(a => a.id === item.artifactId);
                   if (!art) return null;
                   const isActive = stats.activeArtifactIds.includes(item.instanceId);
                   const isDeleting = deletingId === item.instanceId;
+                  
+                  // Tìm màu của Mutation nếu có
+                  const mutationColor = item.mutationName ? MUTATIONS.find(m => m.name === item.mutationName)?.color : 'transparent';
+
                   return (
                     <div key={item.instanceId} className="relative group">
-                      <button onClick={() => equipOrUnequip(item.instanceId)} className={`w-full glass p-6 rounded-none border transition-all flex flex-col items-center text-center ${isActive ? 'border-[#d4af37] bg-[#d4af37]/10' : 'border-[#d4af37]/10 hover:border-[#d4af37]/60'} ${art.chance >= 10000 ? 'rarity-glow' : ''}`}>
-                        <i className={`fas ${getArtifactIcon(art.tier)} text-3xl mb-4 ${art.tier === RarityTier.SINGULARITY ? 'rainbow-glow' : ''}`} style={{ color: art.color }}></i>
-                        <div className="heading-font text-[10px] text-white uppercase truncate w-full">{art.name}</div>
-                        <div className="text-emerald-400/70 text-[8px] font-mono mt-2 italic">+{item.value.toLocaleString()} /s</div>
-                        {isActive && <div className="mt-3 heading-font text-[6px] text-[#d4af37] uppercase tracking-[0.2em] animate-pulse">{t.enrolled}</div>}
+                      <button 
+                        onClick={() => equipOrUnequip(item.instanceId)} 
+                        className={`w-full glass p-5 rounded-none border transition-all flex flex-col items-center text-center min-h-[220px] ${isActive ? 'border-[#d4af37] bg-[#d4af37]/10' : 'border-[#d4af37]/10 hover:border-[#d4af37]/60'} ${art.chance >= 1000 ? 'rarity-glow shadow-[0_0_20px_rgba(0,0,0,0.4)]' : ''}`}
+                        style={{ boxShadow: art.chance >= 1000 ? `0 0 15px ${art.color}44` : 'none' }}
+                      >
+                        <i className={`fas ${getArtifactIcon(art.tier)} text-4xl mb-6 ${art.tier === RarityTier.SINGULARITY ? 'rainbow-glow' : ''}`} style={{ color: art.color }}></i>
+                        
+                        <div className="flex-1 flex flex-col justify-center gap-1 w-full">
+                          {item.mutationName && (
+                            <span className="text-[9px] heading-font uppercase italic opacity-80 tracking-widest" style={{ color: mutationColor }}>
+                              {item.mutationName}
+                            </span>
+                          )}
+                          <div className="heading-font text-xs text-white uppercase break-words px-2 leading-tight">
+                            {art.name}
+                          </div>
+                        </div>
+
+                        <div className="mt-4 w-full pt-3 border-t border-white/5">
+                          <div className="text-emerald-400 text-[9px] font-mono italic">
+                            +{item.value.toLocaleString()} /s
+                          </div>
+                          {isActive && (
+                            <div className="mt-2 heading-font text-[7px] text-[#d4af37] uppercase tracking-[0.3em] animate-pulse">
+                              {t.enrolled}
+                            </div>
+                          )}
+                        </div>
                       </button>
+
                       {!isActive && (
-                        <button onClick={(e) => { e.preventDefault(); confirmDelete(item.instanceId); }} className={`absolute -top-3 -right-3 w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all shadow-xl ${isDeleting ? 'bg-white text-red-600 border-red-600 scale-110' : 'bg-red-800 text-white border-[#d4af37]/20 hover:scale-110'}`}>
-                          {isDeleting ? <span className="text-[8px]">{t.burn}</span> : <i className="fas fa-fire-alt text-sm"></i>}
+                        <button 
+                          onClick={(e) => { e.preventDefault(); confirmDelete(item.instanceId); }} 
+                          className={`absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center border transition-all shadow-xl z-10 ${isDeleting ? 'bg-red-600 text-white border-red-400 scale-125' : 'bg-slate-900/90 text-red-500 border-red-500/30 hover:bg-red-900 hover:text-white'}`}
+                        >
+                          {isDeleting ? <span className="text-[7px] font-bold">YES</span> : <i className="fas fa-trash-alt text-[10px]"></i>}
                         </button>
                       )}
                     </div>
@@ -525,51 +645,55 @@ export default function App() {
           )}
 
           {activeTab === 'rebirth' && (
-            <div className="max-w-4xl mx-auto flex flex-col items-center min-h-full justify-center pb-24 pt-10">
-                 <i className="fas fa-infinity text-[6rem] md:text-[8rem] text-[#d4af37] mb-8 animate-aura-float glow-text"></i>
+            <div className="max-w-4xl mx-auto flex flex-col items-center min-h-full justify-center pb-24 pt-10 px-4">
+                 <div className="relative mb-10 flex items-center justify-center">
+                    <div className="absolute inset-0 border-2 border-[#d4af37]/20 rounded-full animate-magic-circle w-[12rem] h-[12rem] -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2"></div>
+                    <i className="fas fa-infinity text-[6rem] md:text-[8rem] text-[#d4af37] animate-aura-float glow-text relative z-10"></i>
+                 </div>
                  <h2 className="heading-font text-5xl md:text-6xl text-white uppercase italic mb-8 text-center">{t.rebirthTitle}</h2>
                  
-                 <div className="glass p-8 md:p-12 border border-[#d4af37]/30 max-w-2xl w-full relative overflow-hidden mystic-border">
+                 <div className="glass p-8 md:p-10 border border-[#d4af37]/30 max-w-2xl w-full relative overflow-hidden mystic-border shadow-[0_0_50px_rgba(0,0,0,0.5)]">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent"></div>
                     
                     <h3 className="heading-font text-[#d4af37] text-lg uppercase tracking-[0.3em] mb-10 text-center border-b border-[#d4af37]/10 pb-4">{t.rebirthBenefits}</h3>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
-                        <div className="flex flex-col items-center gap-4 text-center group">
-                            <div className="w-14 h-14 rounded-full border border-[#d4af37]/20 flex items-center justify-center bg-[#d4af37]/5 group-hover:bg-[#d4af37]/10 transition-all">
+                    <div className="grid grid-cols-3 gap-4 mb-10">
+                        <div className="flex flex-col items-center gap-3 text-center group">
+                            <div className="w-16 h-16 rounded-full border border-[#d4af37]/20 flex items-center justify-center bg-[#d4af37]/5 group-hover:bg-[#d4af37]/10 transition-all shadow-inner">
                                 <i className="fas fa-circle-plus text-[#d4af37] text-xl"></i>
                             </div>
-                            <div className="flex flex-col">
-                                <span className="text-[10px] heading-font uppercase text-[#d4af37] mb-1">{t.benefitSlot}</span>
-                                <span className="text-white text-xs opacity-70">+1 Slot Vĩnh Viễn</span>
+                            <div className="flex flex-col min-h-[40px]">
+                                <span className="text-[9px] heading-font uppercase text-[#d4af37] mb-1 leading-none">{t.benefitSlot}</span>
+                                <span className="text-white text-[10px] opacity-70 leading-tight">+1 Slot</span>
                             </div>
                         </div>
-                        <div className="flex flex-col items-center gap-4 text-center group">
-                            <div className="w-14 h-14 rounded-full border border-[#d4af37]/20 flex items-center justify-center bg-[#d4af37]/5 group-hover:bg-[#d4af37]/10 transition-all">
+                        <div className="flex flex-col items-center gap-3 text-center group">
+                            <div className="w-16 h-16 rounded-full border border-[#d4af37]/20 flex items-center justify-center bg-[#d4af37]/5 group-hover:bg-[#d4af37]/10 transition-all shadow-inner">
                                 <i className="fas fa-wand-magic-sparkles text-[#d4af37] text-xl"></i>
                             </div>
-                            <div className="flex flex-col">
-                                <span className="text-[10px] heading-font uppercase text-[#d4af37] mb-1">{t.benefitLuck}</span>
-                                <span className="text-white text-xs opacity-70">+10% May Mắn</span>
+                            <div className="flex flex-col min-h-[40px]">
+                                <span className="text-[9px] heading-font uppercase text-[#d4af37] mb-1 leading-none">{t.benefitLuck}</span>
+                                <span className="text-white text-[10px] opacity-70 leading-tight">+10% Luck</span>
                             </div>
                         </div>
-                        <div className="flex flex-col items-center gap-4 text-center group">
-                            <div className="w-14 h-14 rounded-full border border-[#d4af37]/20 flex items-center justify-center bg-[#d4af37]/5 group-hover:bg-[#d4af37]/10 transition-all">
+                        <div className="flex flex-col items-center gap-3 text-center group">
+                            <div className="w-16 h-16 rounded-full border border-[#d4af37]/20 flex items-center justify-center bg-[#d4af37]/5 group-hover:bg-[#d4af37]/10 transition-all shadow-inner">
                                 <i className="fas fa-coins text-[#d4af37] text-xl"></i>
                             </div>
-                            <div className="flex flex-col">
-                                <span className="text-[10px] heading-font uppercase text-[#d4af37] mb-1">{t.benefitIncome}</span>
-                                <span className="text-white text-xs opacity-70">+25% Mana Thu Hoạch</span>
+                            <div className="flex flex-col min-h-[40px]">
+                                <span className="text-[9px] heading-font uppercase text-[#d4af37] mb-1 leading-none">{t.benefitIncome}</span>
+                                <span className="text-white text-[10px] opacity-70 leading-tight">+25% Mana</span>
                             </div>
                         </div>
                     </div>
 
-                    <p className="text-red-400/60 text-[9px] md:text-[10px] uppercase tracking-[0.2em] font-black text-center pt-6 border-t border-white/5 italic">
-                        <i className="fas fa-triangle-exclamation mr-2"></i>{t.rebirthWarn}
+                    <p className="text-red-400/70 text-[10px] uppercase tracking-[0.2em] font-black text-center pt-6 border-t border-white/5 italic flex items-center justify-center gap-2">
+                        <i className="fas fa-triangle-exclamation"></i>
+                        <span>{t.rebirthWarn}</span>
                     </p>
                  </div>
 
-                 <div className="mt-12 flex flex-col items-center gap-4 w-full">
+                 <div className="mt-12 w-full max-w-md">
                     <button 
                       onClick={() => {
                         const cost = 5000000 * Math.pow(10, stats.rebirths);
@@ -587,18 +711,17 @@ export default function App() {
                           }
                         }
                       }} 
-                      className={`w-full max-w-md px-10 py-6 border-2 heading-font text-xl md:text-2xl uppercase transition-all flex flex-col items-center gap-1 ${stats.money >= 5000000 * Math.pow(10, stats.rebirths) ? 'border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37] hover:text-black shadow-[0_0_40px_rgba(212,175,55,0.2)]' : 'border-white/5 text-slate-800 cursor-not-allowed'}`}
+                      className={`w-full px-10 py-6 border-2 heading-font text-2xl uppercase transition-all flex flex-col items-center gap-1 ${stats.money >= 5000000 * Math.pow(10, stats.rebirths) ? 'border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37] hover:text-black shadow-[0_0_40px_rgba(212,175,55,0.2)]' : 'border-white/5 text-slate-800 cursor-not-allowed'}`}
                     >
                       <span>{t.transcend}</span>
-                      <span className="text-[10px] opacity-60">Cost: {(5000000 * Math.pow(10, stats.rebirths)).toLocaleString()} Mana</span>
+                      <span className="text-[11px] opacity-60 normal-case tracking-normal">Requires: {(5000000 * Math.pow(10, stats.rebirths)).toLocaleString()} Mana</span>
                     </button>
                  </div>
             </div>
           )}
 
-          {/* Tab Lab, Forge, Pets, Index và các phần khác giữ nguyên logic */}
           {activeTab === 'shop' && (
-             <div className="max-w-6xl mx-auto pb-24">
+             <div className="max-w-6xl mx-auto pb-24 p-8">
                 <div className="flex justify-between items-end mb-14">
                     <h2 className="heading-font text-5xl text-white uppercase italic tracking-wider">{t.bazaar}</h2>
                     <div className="text-right">
@@ -610,11 +733,11 @@ export default function App() {
                     {DICES.map(dice => {
                         const stock = marketStock[dice.id] || 0;
                         return (
-                            <div key={dice.id} className="glass p-8 border border-[#d4af37]/10 flex flex-col items-center text-center gap-4 relative hover:border-[#d4af37]/50 transition-all">
+                            <div key={dice.id} className="glass p-8 border border-[#d4af37]/10 flex flex-col items-center text-center gap-4 relative hover:border-[#d4af37]/50 transition-all shadow-xl">
                                 {stock > 0 && <div className="absolute top-2 right-2 text-[8px] heading-font text-[#d4af37]">{t.stock} {stock}</div>}
                                 <i className="fas fa-dice text-4xl" style={{ color: dice.color }}></i>
                                 <div className="heading-font text-[11px] text-white uppercase truncate w-full">{dice.name}</div>
-                                <button disabled={stock <= 0 || stats.money < dice.cost} onClick={() => { if (stock > 0 && stats.money >= dice.cost) { setMarketStock(prev => ({ ...prev, [dice.id]: prev[dice.id] - 1 })); setStats(prev => ({ ...prev, money: prev.money - dice.cost, ownedDice: { ...prev.ownedDice, [dice.id]: (prev.ownedDice[dice.id] || 0) + 1 } })); } }} className={`w-full py-2 text-[9px] heading-font border transition-all ${stock > 0 && stats.money >= dice.cost ? 'border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37] hover:text-black' : 'border-white/5 text-slate-800 cursor-not-allowed'}`}>
+                                <button disabled={stock <= 0 || stats.money < dice.cost} onClick={() => { if (stock > 0 && stats.money >= dice.cost) { setMarketStock(prev => ({ ...prev, [dice.id]: prev[dice.id] - 1 })); setStats(prev => ({ ...prev, money: prev.money - dice.cost, ownedDice: { ...prev.ownedDice, [dice.id]: (prev.ownedDice[dice.id] || 0) + 1 } })); } }} className={`w-full py-2 text-[9px] heading-font border transition-all ${stock > 0 && stats.money >= dice.cost ? 'border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37] hover:text-black shadow-lg' : 'border-white/5 text-slate-800 cursor-not-allowed'}`}>
                                     {stock > 0 ? dice.cost.toLocaleString() : 'SOLD OUT'}
                                 </button>
                             </div>
@@ -625,7 +748,7 @@ export default function App() {
           )}
 
           {activeTab === 'lab' && (
-             <div className="max-w-4xl mx-auto pb-24">
+             <div className="max-w-4xl mx-auto pb-24 p-8">
                 <h2 className="heading-font text-5xl text-white uppercase italic text-center mb-16">{t.alchemy}</h2>
                 <div className="space-y-8">
                     {[
@@ -636,9 +759,9 @@ export default function App() {
                         const cost = 1000 * Math.pow(2.5, upgrade.level);
                         const canAfford = stats.money >= cost;
                         return (
-                            <div key={upgrade.type} className="glass p-8 border border-[#d4af37]/10 flex items-center justify-between group hover:border-[#d4af37]/30 transition-all">
+                            <div key={upgrade.type} className="glass p-8 border border-[#d4af37]/10 flex items-center justify-between group hover:border-[#d4af37]/30 transition-all shadow-lg">
                                 <div className="flex items-center gap-6">
-                                    <i className={`fas ${upgrade.icon} text-3xl text-[#d4af37]`}></i>
+                                    <i className={`fas ${upgrade.icon} text-3xl text-[#d4af37] shadow-inner`}></i>
                                     <div>
                                         <h4 className="heading-font text-xl text-white">{upgrade.label} (Rank {upgrade.level})</h4>
                                         <p className="text-xs text-slate-500 italic mt-1">Nâng tầm sức mạnh tâm linh vĩnh cửu.</p>
@@ -652,39 +775,8 @@ export default function App() {
              </div>
           )}
 
-          {activeTab === 'forge' && (
-            <div className="max-w-5xl mx-auto pb-24 text-center">
-              <h2 className="heading-font text-5xl text-white uppercase italic mb-16">{t.altar}</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-12">
-                {stats.activeArtifactIds.map((instanceId, idx) => {
-                  const item = inventory.find(inv => inv.instanceId === instanceId);
-                  const artifact = item ? ARTIFACTS.find(a => a.id === item.artifactId) : null;
-                  return (
-                    <div key={idx} className="aspect-square glass rounded-full border-2 border-[#d4af37]/10 flex flex-col items-center justify-center p-8 relative group hover:border-[#d4af37]/40 shadow-2xl transition-all">
-                      {item && artifact ? (
-                        <>
-                          <i className={`fas ${getArtifactIcon(artifact.tier)} text-6xl mb-6 ${artifact.tier === RarityTier.SINGULARITY ? 'rainbow-glow' : ''}`} style={{ color: artifact.color }}></i>
-                          <div className="heading-font text-lg text-white uppercase">{artifact.name}</div>
-                          <div className="text-[#d4af37] text-[10px] mt-4">+{Math.floor(item.value * getIncomeMultiplier()).toLocaleString()} /s</div>
-                          <button onClick={() => equipOrUnequip(instanceId!)} className="absolute top-4 right-4 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all">
-                            <i className="fas fa-hand-holding-magic text-xl"></i>
-                          </button>
-                        </>
-                      ) : (
-                        <div className="text-white/5 flex flex-col items-center gap-2">
-                          <i className="fas fa-star text-4xl opacity-10 animate-pulse"></i>
-                          <span className="text-[8px] uppercase">{t.empty}</span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           {activeTab === 'index' && (
-            <div className="max-w-7xl mx-auto pb-24">
+            <div className="max-w-7xl mx-auto pb-24 p-8">
               <h2 className="heading-font text-5xl text-white uppercase italic text-center mb-16 tracking-widest">{t.archives}</h2>
               {Object.values(RarityTier).map(tier => {
                   const items = ARTIFACTS.filter(a => a.tier === tier);
@@ -696,11 +788,11 @@ export default function App() {
                         {tier}
                         <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[#d4af37]/20"></div>
                       </h3>
-                      <div className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-4">
+                      <div className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-4 px-2">
                         {items.map(art => {
                           const isDiscovered = stats.discoveredArtifactIds.includes(art.id);
                           return (
-                            <div key={art.id} onClick={() => showLore(art)} className={`glass p-4 border transition-all flex flex-col items-center text-center cursor-pointer ${isDiscovered ? 'border-[#d4af37]/30 hover:scale-110 shadow-lg' : 'border-white/5 opacity-20'}`}>
+                            <div key={art.id} onClick={() => showLore(art)} className={`glass p-4 border transition-all flex flex-col items-center text-center cursor-pointer ${isDiscovered ? 'border-[#d4af37]/30 hover:scale-110 shadow-lg' : 'border-white/5 opacity-20 hover:opacity-40'}`}>
                               <i className={`fas ${getArtifactIcon(art.tier)} text-lg mb-2`} style={{ color: isDiscovered ? art.color : '#334155' }}></i>
                               <div className="heading-font text-[7px] text-white uppercase truncate w-full">{isDiscovered ? art.name : '???'}</div>
                             </div>
@@ -714,18 +806,18 @@ export default function App() {
           )}
 
           {activeTab === 'pets' && (
-             <div className="max-w-7xl mx-auto pb-24 text-center">
+             <div className="max-w-7xl mx-auto pb-24 text-center p-8">
                 <h2 className="heading-font text-5xl text-white uppercase italic mb-16">{t.familiars}</h2>
-                <div className="grid grid-cols-2 md:grid-cols-6 gap-8 mb-20">
+                <div className="grid grid-cols-2 md:grid-cols-6 gap-8 mb-20 px-4">
                     {PET_EGGS.map(egg => (
-                        <button key={egg.id} onClick={() => { if (stats.money >= egg.cost) { const randomPetId = egg.pets[Math.floor(Math.random() * egg.pets.length)]; setStats(prev => ({ ...prev, money: prev.money - egg.cost, ownedPets: [...prev.ownedPets, randomPetId] })); } }} className="glass p-8 border border-[#d4af37]/10 flex flex-col items-center gap-4 hover:border-[#d4af37] transition-all"><i className="fas fa-dragon text-4xl text-white"></i><div className="heading-font text-[10px] text-[#d4af37]">{egg.name}</div><div className="text-[9px] text-white opacity-50">{egg.cost.toLocaleString()}</div></button>
+                        <button key={egg.id} onClick={() => { if (stats.money >= egg.cost) { const randomPetId = egg.pets[Math.floor(Math.random() * egg.pets.length)]; setStats(prev => ({ ...prev, money: prev.money - egg.cost, ownedPets: [...prev.ownedPets, randomPetId] })); } }} className="glass p-8 border border-[#d4af37]/10 flex flex-col items-center gap-4 hover:border-[#d4af37] transition-all shadow-md hover:shadow-2xl"><i className="fas fa-dragon text-4xl text-white"></i><div className="heading-font text-[10px] text-[#d4af37]">{egg.name}</div><div className="text-[9px] text-white opacity-50">{egg.cost.toLocaleString()}</div></button>
                     ))}
                 </div>
-                <div className="grid grid-cols-4 md:grid-cols-10 gap-4">
+                <div className="grid grid-cols-4 md:grid-cols-10 gap-4 px-4">
                     {Array.from(new Set(stats.ownedPets)).map((petId, idx) => {
                         const pet = PETS.find(p => p.id === petId)!;
                         const count = stats.ownedPets.filter(id => id === petId).length;
-                        return (<div key={idx} className="glass p-4 border border-white/5 flex flex-col items-center gap-2 relative transition-all hover:scale-110"><span className="absolute top-1 right-1 text-[8px] text-[#d4af37]">x{count}</span><i className="fas fa-paw text-xl" style={{ color: pet.color }}></i><span className="text-[8px] uppercase heading-font truncate w-full">{pet.name}</span></div>);
+                        return (<div key={idx} className="glass p-4 border border-white/5 flex flex-col items-center gap-2 relative transition-all hover:scale-110 shadow-sm"><span className="absolute top-1 right-1 text-[8px] text-[#d4af37] font-black">x{count}</span><i className="fas fa-paw text-xl" style={{ color: pet.color }}></i><span className="text-[8px] uppercase heading-font truncate w-full">{pet.name}</span></div>);
                     })}
                 </div>
              </div>
